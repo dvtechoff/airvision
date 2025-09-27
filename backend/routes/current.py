@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 
 from models.schemas import AQIData, Pollutants, ErrorResponse
-from services.openaq_service import OpenAQService
+from services.simple_air_quality_service import SimpleAirQualityService
 from services.tempo_service import TEMPOService
 
 router = APIRouter()
@@ -22,77 +22,30 @@ async def get_current_aqi(
     - NASA TEMPO satellite data (if available)
     """
     try:
-        # Initialize services
-        openaq_service = OpenAQService()
+        # Use the simple service that works without database
+        simple_service = SimpleAirQualityService()
         
-        # Get data from multiple sources concurrently
-        tasks = [openaq_service.get_aqi_data(city)]
-        tempo_service = TEMPOService()
+        # Get comprehensive data
+        result = await simple_service.get_comprehensive_air_quality(city, include_tempo=include_tempo)
         
-        if include_tempo:
-            tasks.append(tempo_service.get_tempo_data(city))
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
         
-        # Wait for all data sources
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Process results
-        openaq_data = results[0] if not isinstance(results[0], Exception) else None
-        tempo_data = results[1] if len(results) > 1 and not isinstance(results[1], Exception) else None
-        
-        # Use TEMPO as primary source if available, fallback to OpenAQ
-        aqi_data = None
-        source = ""
-        
-        if tempo_data and tempo_data.get('air_quality'):
-            # Use TEMPO data as primary source
-            aqi_data = {
-                "city": tempo_data["city"],
-                "aqi": tempo_data["air_quality"]["aqi"],
-                "category": tempo_data["air_quality"]["category"],
-                "pollutants": {
-                    "pm25": tempo_data["surface_estimates"]["pm25"],
-                    "pm10": tempo_data["surface_estimates"]["pm10"],
-                    "no2": tempo_data["surface_estimates"]["no2"],
-                    "o3": tempo_data["surface_estimates"]["o3"]
-                },
-                "timestamp": tempo_data["timestamp"]
-            }
-            source = "NASA TEMPO Satellite"
-            
-            # Enhance with OpenAQ if available
-            if openaq_data:
-                source += " + OpenAQ"
-                # Could add ground validation here
-                
-        elif openaq_data:
-            # Use OpenAQ as fallback
-            aqi_data = openaq_data
-            source = "OpenAQ"
-            
-        else:
-            # Emergency fallback to realistic mock data
-            aqi_data = {
-                "city": city,
-                "aqi": 125,
-                "category": "Unhealthy for Sensitive Groups",
-                "pollutants": {
-                    "pm25": 45.0,
-                    "pm10": 85.0,
-                    "no2": 35.0,
-                    "o3": 95.0
-                },
-                "timestamp": datetime.now()
-            }
-            source = "Estimated Data"
+        # Extract combined AQI data
+        combined_aqi = result.get("combined_aqi", {})
+        openaq_data = result.get("openaq_data", {})
+        tempo_data = result.get("tempo_data")
         
         # Create response
         response = AQIData(
-            city=aqi_data["city"],
-            aqi=aqi_data["aqi"],
-            category=aqi_data["category"],
-            pollutants=Pollutants(**aqi_data["pollutants"]),
-            source=source,
-            timestamp=aqi_data["timestamp"]
+            city=city,
+            aqi=combined_aqi.get("aqi", 85),
+            category=combined_aqi.get("category", "Moderate"),
+            pollutants=Pollutants(**combined_aqi.get("pollutants", {
+                "pm25": 28, "pm10": 52, "no2": 18, "o3": 65
+            })),
+            source=f"Combined: {', '.join(result.get('data_sources', ['Fallback']))}",
+            timestamp=combined_aqi.get("timestamp", datetime.now())
         )
         
         return response
