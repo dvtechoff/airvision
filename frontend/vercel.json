@@ -1,0 +1,20 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@api_url"
+  },
+  "functions": {
+    "app/**/*.tsx": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://tempo-air-quality-backend.onrender.com/api/$1"
+    }
+  ]
+}

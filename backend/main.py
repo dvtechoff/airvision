@@ -1,0 +1,59 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+import os
+from dotenv import load_dotenv
+
+from routes import current, forecast, weather
+
+# Load environment variables
+load_dotenv()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="TEMPO Air Quality API",
+    description="Real-time air quality monitoring using NASA TEMPO satellite data",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "https://tempo-air-quality.vercel.app","http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(current.router, prefix="/api", tags=["current"])
+app.include_router(forecast.router, prefix="/api", tags=["forecast"])
+app.include_router(weather.router, prefix="/api", tags=["weather"])
+
+@app.get("/")
+async def root():
+    return {
+        "message": "TEMPO Air Quality API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "endpoints": {
+            "current": "/api/current?city=Delhi",
+            "forecast": "/api/forecast?city=Delhi", 
+            "weather": "/api/weather?city=Delhi"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "tempo-air-quality-api"}
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
