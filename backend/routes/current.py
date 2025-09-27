@@ -43,6 +43,12 @@ async def get_current_aqi(
         tempo_data = result.get("tempo_data")
         
         # Create response
+        timestamp_value = combined_aqi.get("timestamp")
+        if isinstance(timestamp_value, str):
+            timestamp_value = datetime.fromisoformat(timestamp_value.replace('Z', '+00:00'))
+        elif timestamp_value is None:
+            timestamp_value = datetime.now()
+            
         response = AQIData(
             city=city,
             aqi=combined_aqi.get("aqi", 85),
@@ -51,12 +57,16 @@ async def get_current_aqi(
                 "pm25": 28, "pm10": 52, "no2": 18, "o3": 65
             })),
             source=f"Combined: {', '.join(result.get('data_sources', ['Fallback']))}",
-            timestamp=combined_aqi.get("timestamp", datetime.now())
+            timestamp=timestamp_value
         )
         
         return response
         
     except Exception as e:
+        print(f"Error details: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch AQI data for {city}: {str(e)}"

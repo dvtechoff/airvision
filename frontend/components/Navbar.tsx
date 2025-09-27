@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Wind, BarChart3, Bell, Info, Activity } from 'lucide-react'
+import { Wind, BarChart3, Bell, Info, Activity, Users } from 'lucide-react'
 
 export default function Navbar() {
   return (
@@ -32,6 +32,10 @@ export default function Navbar() {
             <Link href="/realtime" className="text-gray-700 hover:text-blue-600 font-medium smooth-transition flex items-center space-x-1">
               <Activity className="w-4 h-4" />
               <span>Real-time</span>
+            </Link>
+            <Link href="/community" className="text-gray-700 hover:text-blue-600 font-medium smooth-transition flex items-center space-x-1">
+              <Users className="w-4 h-4" />
+              <span>Community</span>
             </Link>
             <Link href="/alerts" className="text-gray-700 hover:text-blue-600 font-medium smooth-transition flex items-center space-x-1">
               <Bell className="w-4 h-4" />

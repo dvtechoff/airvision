@@ -93,228 +93,278 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="space-y-8">
-        {/* Hero Section */}
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200 card-shadow">
-          <div className="max-w-4xl mx-auto px-4">
-            <Cloud className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-            <h1 className="text-4xl font-bold mb-4 text-gray-900">AirVision</h1>
-            <p className="text-xl mb-6 text-gray-600">
-              From Earth Data to Safer Skies - Real-time air quality monitoring powered by NASA TEMPO satellite data
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Badge className="bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2">
-                <Satellite className="w-4 h-4 mr-2" />
-                NASA TEMPO Data
-              </Badge>
-              <Badge className="bg-green-100 text-green-700 border border-green-200 px-4 py-2">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                AI Forecasting
-              </Badge>
-              <Badge className="bg-purple-100 text-purple-700 border border-purple-200 px-4 py-2">
-                <Shield className="w-4 h-4 mr-2" />
-                Health Protection
-              </Badge>
+    <div className="min-h-screen bg-white text-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="space-y-12">
+          {/* Hero Section */}
+          <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border border-gray-200 shadow-sm">
+            <div className="max-w-4xl mx-auto px-4">
+              <div className="mb-8">
+                <div className="inline-flex p-4 bg-blue-600 rounded-full mb-6">
+                  <Cloud className="w-12 h-12 text-white" />
+                </div>
+                <h1 className="text-5xl font-bold mb-6 text-black">
+                  Air<span className="text-blue-600">Vision</span>
+                </h1>
+                <p className="text-xl mb-8 text-gray-700 leading-relaxed">
+                  From Earth Data to Safer Skies - Professional air quality monitoring 
+                  powered by NASA TEMPO satellite technology and AI forecasting
+                </p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-4 py-2 text-sm">
+                    <Satellite className="w-4 h-4 mr-2" />
+                    NASA TEMPO Data
+                  </Badge>
+                  <Badge className="bg-green-100 text-green-800 border-green-200 px-4 py-2 text-sm">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    AI Forecasting
+                  </Badge>
+                  <Badge className="bg-purple-100 text-purple-800 border-purple-200 px-4 py-2 text-sm">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Health Protection
+                  </Badge>
+                  <Badge className="bg-orange-100 text-orange-800 border-orange-200 px-4 py-2 text-sm">
+                    <Users className="w-4 h-4 mr-2" />
+                    Community Driven
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
-      </div>
 
-      {/* Mission Statement */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Our Mission</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            We believe that everyone has the right to breathe clean air. Our mission is to democratize access to 
-            real-time air quality information by leveraging NASA&apos;s cutting-edge TEMPO satellite technology. 
-            By combining space-based observations with ground measurements and AI-powered forecasting, 
-            we empower individuals and communities to make informed decisions about their health and environment.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Features Grid */}
-      <div>
-        <h2 className="text-3xl font-bold text-center mb-8">Key Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => {
-            const Icon = feature.icon
-            return (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <Icon className={`w-8 h-8 ${feature.color} mb-2`} />
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">{feature.description}</p>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Data Sources */}
-      <div>
-        <h2 className="text-3xl font-bold text-center mb-8">Data Sources</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {dataSources.map((source, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-4 h-4 rounded-full ${source.color}`}></div>
-                  <CardTitle className="text-lg">{source.name}</CardTitle>
+          {/* Mission Statement */}
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-3xl font-bold text-black">Our Mission</CardTitle>
+            </CardHeader>
+            <CardContent className="px-8 pb-8">
+              <p className="text-lg text-gray-700 leading-relaxed text-center max-w-4xl mx-auto">
+                We believe that everyone has the right to breathe clean air. Our mission is to democratize access to 
+                real-time air quality information by leveraging NASA's cutting-edge TEMPO satellite technology. 
+                By combining space-based observations with ground measurements, AI-powered forecasting, and community reporting, 
+                we empower individuals and communities to make informed decisions about their health and environment.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Satellite className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-black mb-2">Satellite Technology</h4>
+                  <p className="text-sm text-gray-600">NASA TEMPO provides hourly air quality data</p>
                 </div>
-                <p className="text-sm text-gray-600">{source.description}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Coverage:</span>
-                    <span className="font-medium">{source.coverage}</span>
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <BarChart3 className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Frequency:</span>
-                    <span className="font-medium">{source.frequency}</span>
+                  <h4 className="font-semibold text-black mb-2">AI Forecasting</h4>
+                  <p className="text-sm text-gray-600">Machine learning predicts air quality trends</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-100">
+                  <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Users className="w-6 h-6 text-white" />
                   </div>
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-500 mb-2">Pollutants:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {source.pollutants.map((pollutant, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {pollutant}
-                        </Badge>
-                      ))}
+                  <h4 className="font-semibold text-black mb-2">Community Focus</h4>
+                  <p className="text-sm text-gray-600">User reports enhance sensor accuracy</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Features Grid */}
+          <div className="py-8">
+            <h2 className="text-4xl font-bold text-center mb-12 text-black">Key Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, index) => {
+                const Icon = feature.icon
+                return (
+                  <Card key={index} className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group">
+                    <CardHeader className="text-center pb-4">
+                      <div className="inline-flex p-3 bg-gray-50 rounded-full mb-4 group-hover:bg-blue-50 transition-colors">
+                        <Icon className={`w-8 h-8 ${feature.color}`} />
+                      </div>
+                      <CardTitle className="text-xl font-semibold text-black">{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Data Sources */}
+          <div className="py-8">
+            <h2 className="text-4xl font-bold text-center mb-12 text-black">Data Sources</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {dataSources.map((source, index) => (
+                <Card key={index} className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className={`w-3 h-3 rounded-full ${source.color}`}></div>
+                      <CardTitle className="text-xl font-semibold text-black">{source.name}</CardTitle>
                     </div>
-                  </div>
+                    <p className="text-gray-600 text-sm leading-relaxed">{source.description}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 font-medium">Coverage:</span>
+                        <span className="font-semibold text-black">{source.coverage}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 font-medium">Frequency:</span>
+                        <span className="font-semibold text-black">{source.frequency}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-sm font-medium text-gray-500 mb-3">Monitored Parameters:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {source.pollutants.map((pollutant, i) => (
+                            <Badge key={i} variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
+                              {pollutant}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* AQI Scale */}
+          <div className="py-8">
+            <h2 className="text-4xl font-bold text-center mb-12 text-black">Air Quality Index (AQI) Scale</h2>
+            <Card className="bg-white border-gray-200 shadow-sm">
+              <CardContent className="p-8">
+                <div className="space-y-4">
+                  {aqiLevels.map((level, index) => (
+                    <div key={index} className="flex items-center space-x-6 p-4 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100">
+                      <div className={`w-8 h-8 rounded-full ${level.color} shadow-sm`}></div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-1">
+                          <span className="font-bold text-lg text-black">{level.level}</span>
+                          <Badge variant="outline" className="bg-white border-gray-300 text-gray-700 font-medium">
+                            {level.range}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 leading-relaxed">{level.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* AQI Scale */}
-      <div>
-        <h2 className="text-3xl font-bold text-center mb-8">Air Quality Index (AQI) Scale</h2>
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {aqiLevels.map((level, index) => (
-                <div key={index} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50">
-                  <div className={`w-6 h-6 rounded-full ${level.color}`}></div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold">{level.level}</span>
-                      <Badge variant="outline">{level.range}</Badge>
+          {/* Technology Stack */}
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-3xl font-bold text-black">Technology Stack</CardTitle>
+              <p className="text-gray-600 mt-2">Built with modern, scalable technologies for reliability and performance</p>
+            </CardHeader>
+            <CardContent className="px-8 pb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-white" />
                     </div>
-                    <p className="text-sm text-gray-600">{level.description}</p>
+                    <h3 className="text-2xl font-bold text-black">Frontend</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Next.js 14 with App Router</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">React 18 with TypeScript</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">TailwindCSS for styling</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">ShadCN/UI components</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Recharts for data visualization</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Framer Motion for animations</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Technology Stack */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Technology Stack</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Frontend</h3>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Next.js 14 with App Router</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>React 18 with TypeScript</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>TailwindCSS for styling</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>ShadCN/UI components</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Recharts for data visualization</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Leaflet.js for interactive maps</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span>Framer Motion for animations</span>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-black">Backend & Data</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">FastAPI (Python) for API</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Pandas & Xarray for data processing</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Scikit-learn for ML models</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">NASA EarthData API integration</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">OpenWeatherMap APIs</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <span className="text-gray-800 font-medium">Community Reporting System</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Backend & Data</h3>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>FastAPI (Python) for API</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Pandas & Xarray for data processing</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Scikit-learn for ML models</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Statsmodels for ARIMA forecasting</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>NASA EarthData API integration</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>OpenAQ & OpenWeatherMap APIs</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Pydantic for data validation</span>
+            </CardContent>
+          </Card>
+
+          {/* Call to Action */}
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 shadow-sm">
+            <CardContent className="text-center py-16">
+              <div className="max-w-3xl mx-auto">
+                <h2 className="text-4xl font-bold mb-6 text-black">Ready to Take Action?</h2>
+                <p className="text-xl text-gray-700 mb-10 leading-relaxed">
+                  Start monitoring air quality in your area, receive alerts about pollution events, 
+                  and contribute to your community's environmental awareness.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    Check Your Area
+                  </Button>
+                  <Button variant="outline" size="lg" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3">
+                    <AlertTriangle className="w-5 h-5 mr-2" />
+                    Set Up Alerts
+                  </Button>
+                  <Button variant="outline" size="lg" className="border-purple-600 text-purple-600 hover:bg-purple-50 px-8 py-3">
+                    <Users className="w-5 h-5 mr-2" />
+                    Join Community
+                  </Button>
                 </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Call to Action */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
-        <CardContent className="text-center py-12">
-          <h2 className="text-3xl font-bold mb-4">Ready to Take Action?</h2>
-          <p className="text-lg text-gray-600 mb-6">
-            Start monitoring air quality in your area and make informed decisions about your health.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg">
-              <MapPin className="w-5 h-5 mr-2" />
-              Check Your Area
-            </Button>
-            <Button variant="outline" size="lg">
-              <AlertTriangle className="w-5 h-5 mr-2" />
-              Set Up Alerts
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, TrendingUp, Activity, Zap, Database } from 'lucide-react'
 import AQICard from '@/components/AQICard'
 import WeatherCard from '@/components/WeatherCard'
@@ -17,7 +17,7 @@ export default function HomePage() {
   const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchCity, setSearchCity] = useState('')
-  const [showRealtime, setShowRealtime] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData(city)
@@ -25,6 +25,7 @@ export default function HomePage() {
 
   const fetchData = async (cityName: string) => {
     setLoading(true)
+    setError(null)
     try {
       const [aqi, weather] = await Promise.all([
         apiClient.getCurrentAQI(cityName),
@@ -42,6 +43,7 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError(`Failed to fetch data for ${cityName}. Please try another city.`)
     } finally {
       setLoading(false)
     }
@@ -51,13 +53,15 @@ export default function HomePage() {
     e.preventDefault()
     if (searchCity.trim()) {
       setCity(searchCity.trim())
+      setSearchCity('')
     }
   }
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-white border-b border-gray-200">
+      <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-100/20 via-transparent to-purple-100/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -65,16 +69,41 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-black">
+            <div className="mb-8">
+              <div className="inline-flex p-4 bg-blue-600 rounded-full mb-6">
+                <Activity className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-black leading-tight">
               From Earth Data to{' '}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Safer Skies
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
-              Professional air quality monitoring powered by NASA TEMPO satellite data. 
-              Get real-time insights to protect your health and environment.
+            <p className="text-xl md:text-2xl text-gray-700 mb-12 max-w-4xl mx-auto leading-relaxed">
+              Professional air quality monitoring powered by NASA TEMPO satellite data and real-time community reports. 
+              Get accurate insights to protect your health and environment.
             </p>
+            
+            {/* Feature Badges */}
+            <div className="flex flex-wrap justify-center gap-3 mb-12">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-4 py-2 text-sm">
+                <Activity className="w-4 h-4 mr-2" />
+                NASA TEMPO Satellite
+              </Badge>
+              <Badge className="bg-green-100 text-green-800 border-green-200 px-4 py-2 text-sm">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                AI Forecasting
+              </Badge>
+              <Badge className="bg-purple-100 text-purple-800 border-purple-200 px-4 py-2 text-sm">
+                <Database className="w-4 h-4 mr-2" />
+                Real-time Processing
+              </Badge>
+              <Badge className="bg-orange-100 text-orange-800 border-orange-200 px-4 py-2 text-sm">
+                <MapPin className="w-4 h-4 mr-2" />
+                Community Reports
+              </Badge>
+            </div>
             
             {/* Search Bar */}
             <motion.form
@@ -82,172 +111,206 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="max-w-md mx-auto flex space-x-2"
+              className="max-w-lg mx-auto"
             >
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  type="text"
-                  placeholder="Enter city name..."
-                  value={searchCity}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchCity(e.target.value)}
-                  className="pl-10 bg-white border border-gray-300 text-gray-900"
-                />
+              <div className="relative flex space-x-3 p-2 bg-white rounded-2xl shadow-lg border border-gray-200">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Input
+                    type="text"
+                    placeholder="Enter city name to check air quality..."
+                    value={searchCity}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchCity(e.target.value)}
+                    className="pl-12 pr-4 py-3 bg-transparent border-0 text-gray-900 placeholder-gray-500 focus:ring-0"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  Check Quality
+                </Button>
               </div>
-              <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">
-                Check Air Quality
-              </Button>
+              <p className="text-sm text-gray-500 mt-3">
+                Try: New York, Los Angeles, Chicago, Houston, or any major city
+              </p>
             </motion.form>
           </motion.div>
         </div>
       </section>
 
       {/* Dashboard Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          {/* Current Location Header */}
-          <div className="flex items-center space-x-2 mb-8">
-            <MapPin className="w-6 h-6 text-blue-600" />
-            <h2 className="text-3xl font-bold text-black">{city}</h2>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1 text-sm text-gray-500">
-                <Activity className="w-4 h-4" />
-                <span>Live data from NASA TEMPO</span>
-              </div>
-              {realtimeData && (
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className="flex items-center space-x-1">
-                    <Zap className="w-3 h-3" />
-                    <span>Real-time Processing</span>
-                  </Badge>
-                  <Badge 
-                    variant={realtimeData.data_quality === 'excellent' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {realtimeData.data_quality} quality
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowRealtime(!showRealtime)}
-                    className="text-xs"
-                  >
-                    <Database className="w-3 h-3 mr-1" />
-                    {showRealtime ? 'Hide' : 'Show'} Details
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
+              Live Environmental Dashboard - {city}
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Real-time air quality and weather data from OpenWeatherMap API
+            </p>
+          </motion.div>
 
-          {/* Main Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-            {/* AQI Card - Takes 2 columns */}
-            <div className="lg:col-span-2">
-              <AQICard 
-                data={aqiData} 
-                loading={loading}
-                className="h-full"
-              />
-            </div>
-            
-            {/* Weather Card */}
-            <div className="lg:col-span-1">
-              {weatherData && (
-                <WeatherCard 
-                  data={weatherData}
-                  className="h-full"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Real-time Processing Details */}
-          {showRealtime && realtimeData && (
+          {error && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8 border border-blue-200"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 text-center"
             >
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                <Zap className="w-5 h-5 text-blue-600" />
-                <span>Real-time Processing Details</span>
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Processing Time</div>
-                  <div className="text-lg font-semibold text-blue-600">
-                    {realtimeData.processing_time_ms ? realtimeData.processing_time_ms.toFixed(1) : '0.0'}ms
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Data Quality</div>
-                  <div className="text-lg font-semibold capitalize">
-                    {realtimeData.data_quality}
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Cloud Cover</div>
-                  <div className="text-lg font-semibold">
-                    {realtimeData.measurements?.cloud_fraction ? (realtimeData.measurements.cloud_fraction * 100).toFixed(1) : '0.0'}%
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-1">Cache Status</div>
-                  <div className="text-lg font-semibold text-green-600">
-                    {realtimeData.cache_info?.cached ? 'Cached' : 'Fresh'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-4 text-sm text-gray-600">
-                <p>
-                  <strong>Source:</strong> {realtimeData.source || 'Unknown'} • 
-                  <strong> Resolution:</strong> {realtimeData.metadata?.spatial_resolution || 'Unknown'} • 
-                  <strong> Algorithm:</strong> {realtimeData.metadata?.retrieval_algorithm || 'Unknown'}
-                </p>
-              </div>
+              <p className="text-red-800 text-lg">{error}</p>
+              <Button 
+                onClick={() => fetchData('New York')}
+                className="mt-4 bg-red-600 text-white hover:bg-red-700"
+              >
+                Try New York
+              </Button>
             </motion.div>
           )}
 
-          {/* Health Tips Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl"></div>
+              <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-1">
+                {loading ? (
+                  <div className="h-80 flex items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                      <p className="text-gray-600">Loading air quality data...</p>
+                    </div>
+                  </div>
+                ) : aqiData ? (
+                  <AQICard data={aqiData} />
+                ) : (
+                  <div className="h-80 flex items-center justify-center">
+                    <p className="text-gray-500">No air quality data available</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-2xl blur-xl"></div>
+              <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-1">
+                {loading ? (
+                  <div className="h-80 flex items-center justify-center">
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+                      <p className="text-gray-600">Loading weather data...</p>
+                    </div>
+                  </div>
+                ) : weatherData ? (
+                  <WeatherCard data={weatherData} />
+                ) : (
+                  <div className="h-80 flex items-center justify-center">
+                    <p className="text-gray-500">No weather data available</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Health Recommendations Section */}
+      <section className="py-16 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
+              Personalized Health Recommendations
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Get tailored advice based on current air quality conditions in {city} to protect your health
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {getHealthTips(aqiData?.aqi || 50).map((tip, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300"
+              >
+                <div className="mb-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                    <Activity className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-black mb-2">{tip.title}</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">{tip.description}</p>
+              </motion.div>
+            ))}
+          </div>
+
           {aqiData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-8"
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="text-center mt-12"
             >
-              <h3 className="text-2xl font-bold text-black mb-6 flex items-center space-x-2">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-                <span>Health Recommendations</span>
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getHealthTips(aqiData.aqi).map((tip, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 * index }}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                  >
-                    <div className="text-2xl mb-2">{tip.icon}</div>
-                    <h4 className="font-semibold text-black mb-2">{tip.title}</h4>
-                    <p className="text-sm text-gray-700">{tip.description}</p>
-                  </motion.div>
-                ))}
+              <div className="inline-flex items-center bg-white px-6 py-3 rounded-full shadow-lg border border-gray-200">
+                <span className="text-gray-600 mr-2">Current AQI in {city}:</span>
+                <span className="font-bold text-2xl text-black">{aqiData.aqi}</span>
+                <span className="ml-2 text-sm font-medium text-gray-500">({aqiData.category})</span>
               </div>
             </motion.div>
           )}
-        </motion.div>
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Join the Community-Driven Air Quality Revolution
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Help build a comprehensive air quality network by reporting incidents and sharing feedback. 
+              Together, we can create safer communities for everyone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                onClick={() => window.location.href = '/community'}
+              >
+                Join Community
+              </Button>
+              <Button 
+                className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-200"
+                onClick={() => window.location.href = '/forecast'}
+              >
+                View Forecasts
+              </Button>
+            </div>
+          </motion.div>
+        </div>
       </section>
     </div>
   )

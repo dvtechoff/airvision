@@ -46,7 +46,7 @@ class OpenWeatherAQService:
             self.logger.info("OpenWeatherMap Air Pollution client initialized")
 
     async def get_aqi_data(self, city: str) -> Dict[str, Any]:
-        """Get AQI data from OpenWeatherMap Air Pollution API"""
+        """Get AQI data from OpenWeatherMap Air Pollution API or fallback to realistic data"""
         await self.initialize_client()
         
         # Get coordinates for city
@@ -54,6 +54,11 @@ class OpenWeatherAQService:
         if not coords:
             self.logger.warning(f"No coordinates found for {city}")
             return self._get_fallback_data(city)
+        
+        # Check if we have a real API key
+        if self.api_key == "your_openweather_api_key_here" or not self.api_key:
+            self.logger.info(f"Using realistic mock data for {city} (no API key provided)")
+            return self._get_realistic_mock_data(city, coords)
         
         try:
             # Call OpenWeatherMap Air Pollution API
@@ -67,18 +72,18 @@ class OpenWeatherAQService:
             response = await self.client.get(url, params=params)
             
             if response.status_code == 401:
-                self.logger.warning("OpenWeatherMap API key invalid or missing")
-                return self._get_fallback_data(city)
+                self.logger.warning("OpenWeatherMap API key invalid, using mock data")
+                return self._get_realistic_mock_data(city, coords)
             elif response.status_code != 200:
                 self.logger.error(f"OpenWeatherMap API error: {response.status_code}")
-                return self._get_fallback_data(city)
+                return self._get_realistic_mock_data(city, coords)
             
             data = response.json()
             return self._process_openweather_data(city, data, coords)
             
         except Exception as e:
             self.logger.error(f"Error fetching OpenWeatherMap data for {city}: {e}")
-            return self._get_fallback_data(city)
+            return self._get_realistic_mock_data(city, coords)
 
     def _process_openweather_data(self, city: str, data: Dict, coords: Dict) -> Dict[str, Any]:
         """Process OpenWeatherMap air pollution response"""
@@ -146,6 +151,67 @@ class OpenWeatherAQService:
             return "Very Unhealthy"
         else:
             return "Hazardous"
+
+    def _get_realistic_mock_data(self, city: str, coords: Dict) -> Dict[str, Any]:
+        """Generate realistic mock data based on city characteristics"""
+        import random
+        from datetime import datetime
+        
+        # Seed random with city name and current hour for consistent but time-varying data
+        seed_value = hash(city.lower()) + datetime.now().hour
+        random.seed(seed_value)
+        
+        # City-specific air quality patterns
+        city_patterns = {
+            "new york": {"base_aqi": 85, "pm25_range": (12, 35), "variation": 15},
+            "los angeles": {"base_aqi": 105, "pm25_range": (18, 45), "variation": 20},
+            "chicago": {"base_aqi": 75, "pm25_range": (10, 30), "variation": 12},
+            "houston": {"base_aqi": 95, "pm25_range": (15, 38), "variation": 18},
+            "phoenix": {"base_aqi": 70, "pm25_range": (8, 25), "variation": 10},
+            "philadelphia": {"base_aqi": 80, "pm25_range": (11, 32), "variation": 14},
+            "san francisco": {"base_aqi": 65, "pm25_range": (7, 22), "variation": 8},
+            "boston": {"base_aqi": 72, "pm25_range": (9, 28), "variation": 11},
+            "seattle": {"base_aqi": 68, "pm25_range": (8, 24), "variation": 9},
+            "miami": {"base_aqi": 78, "pm25_range": (10, 30), "variation": 13},
+            "atlanta": {"base_aqi": 82, "pm25_range": (11, 33), "variation": 15},
+            "denver": {"base_aqi": 73, "pm25_range": (9, 27), "variation": 12},
+            "las vegas": {"base_aqi": 88, "pm25_range": (13, 35), "variation": 16},
+            "detroit": {"base_aqi": 90, "pm25_range": (14, 36), "variation": 17}
+        }
+        
+        pattern = city_patterns.get(city.lower(), {"base_aqi": 75, "pm25_range": (10, 30), "variation": 12})
+        
+        # Calculate realistic values with some variation
+        variation = random.randint(-pattern["variation"], pattern["variation"])
+        aqi = max(15, min(200, pattern["base_aqi"] + variation))
+        
+        pm25_min, pm25_max = pattern["pm25_range"]
+        pm25 = round(random.uniform(pm25_min, pm25_max), 1)
+        
+        # Generate correlated pollutant values
+        pm10 = round(pm25 * random.uniform(1.3, 2.1), 1)
+        no2 = round(random.uniform(8, 35), 1)
+        o3 = round(random.uniform(45, 95), 1)
+        so2 = round(random.uniform(2, 12), 1)
+        co = round(random.uniform(0.3, 2.8), 1)
+        
+        return {
+            "city": city,
+            "aqi": aqi,
+            "category": self._get_aqi_category(aqi),
+            "pollutants": {
+                "pm25": pm25,
+                "pm10": pm10,
+                "no2": no2,
+                "o3": o3,
+                "so2": so2,
+                "co": co
+            },
+            "coordinates": coords,
+            "source": "Realistic Mock Data (OpenWeather Format)",
+            "timestamp": datetime.utcnow().isoformat(),
+            "note": f"Simulated realistic data for {city} based on typical air quality patterns"
+        }
 
     def _get_fallback_data(self, city: str) -> Dict[str, Any]:
         """Generate fallback data when API is unavailable"""

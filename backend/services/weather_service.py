@@ -125,35 +125,56 @@ class WeatherService:
     
     def _get_mock_weather(self, city: str) -> Dict[str, Any]:
         """
-        Return mock weather data when API is unavailable.
+        Return realistic mock weather data based on city characteristics when API is unavailable.
         """
         import random
+        from datetime import datetime
         
-        temperature = random.uniform(15, 35)
-        humidity = random.randint(30, 90)
-        wind_speed = random.uniform(2, 15)
-        pressure = random.uniform(1000, 1020)
-        visibility = random.uniform(3, 15)
+        # Seed random with city name and current hour for consistent but time-varying data
+        seed_value = hash(city.lower()) + datetime.now().hour
+        random.seed(seed_value)
         
-        # Weather conditions based on temperature and humidity
-        if temperature > 30 and humidity > 70:
-            conditions = "Haze"
-        elif temperature < 10:
-            conditions = "Clear"
-        elif humidity > 80:
-            conditions = "Cloudy"
-        elif wind_speed > 10:
-            conditions = "Windy"
-        else:
-            conditions = "Partly Cloudy"
+        # City-specific weather patterns
+        city_weather_patterns = {
+            "new york": {"temp_range": (18, 28), "humidity_range": (45, 75), "typical_conditions": "Partly Cloudy"},
+            "los angeles": {"temp_range": (22, 32), "humidity_range": (35, 65), "typical_conditions": "Sunny"},
+            "chicago": {"temp_range": (15, 25), "humidity_range": (50, 80), "typical_conditions": "Cloudy"},
+            "houston": {"temp_range": (25, 35), "humidity_range": (60, 90), "typical_conditions": "Humid"},
+            "phoenix": {"temp_range": (28, 38), "humidity_range": (20, 45), "typical_conditions": "Clear"},
+            "philadelphia": {"temp_range": (17, 27), "humidity_range": (45, 75), "typical_conditions": "Partly Cloudy"},
+            "san francisco": {"temp_range": (16, 22), "humidity_range": (60, 85), "typical_conditions": "Foggy"},
+            "boston": {"temp_range": (15, 24), "humidity_range": (55, 80), "typical_conditions": "Partly Cloudy"},
+            "seattle": {"temp_range": (14, 22), "humidity_range": (70, 90), "typical_conditions": "Overcast"},
+            "miami": {"temp_range": (24, 32), "humidity_range": (65, 90), "typical_conditions": "Partly Cloudy"},
+            "atlanta": {"temp_range": (20, 30), "humidity_range": (55, 85), "typical_conditions": "Partly Cloudy"},
+            "denver": {"temp_range": (16, 26), "humidity_range": (35, 65), "typical_conditions": "Sunny"},
+            "las vegas": {"temp_range": (26, 36), "humidity_range": (15, 40), "typical_conditions": "Clear"},
+            "detroit": {"temp_range": (16, 25), "humidity_range": (50, 80), "typical_conditions": "Cloudy"}
+        }
+        
+        pattern = city_weather_patterns.get(city.lower(), {
+            "temp_range": (18, 28), 
+            "humidity_range": (45, 75), 
+            "typical_conditions": "Partly Cloudy"
+        })
+        
+        # Generate realistic values
+        temp_min, temp_max = pattern["temp_range"]
+        humidity_min, humidity_max = pattern["humidity_range"]
+        
+        temperature = round(random.uniform(temp_min, temp_max), 1)
+        humidity = random.randint(humidity_min, humidity_max)
+        wind_speed = round(random.uniform(2, 15), 1)
+        pressure = round(random.uniform(1005, 1025), 1)
+        visibility = round(random.uniform(8, 15), 1)
         
         return {
-            "temperature": round(temperature, 1),
+            "temperature": temperature,
             "humidity": humidity,
-            "wind_speed": round(wind_speed, 1),
-            "conditions": conditions,
-            "pressure": round(pressure, 1),
-            "visibility": round(visibility, 1)
+            "wind_speed": wind_speed,
+            "conditions": pattern["typical_conditions"],
+            "pressure": pressure,
+            "visibility": visibility
         }
     
     def _get_mock_forecast(self, city: str, days: int) -> Dict[str, Any]:

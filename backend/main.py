@@ -5,7 +5,7 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 
-from routes import current, forecast, weather, realtime, test
+from routes import current, forecast, weather, realtime, test, community
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +34,7 @@ app.include_router(forecast.router, prefix="/api", tags=["forecast"])
 app.include_router(weather.router, prefix="/api", tags=["weather"])
 app.include_router(realtime.router, prefix="/api", tags=["realtime"])
 app.include_router(test.router, prefix="/api", tags=["test"])
+app.include_router(community.router, prefix="/api/community", tags=["community"])
 
 @app.get("/")
 async def root():
