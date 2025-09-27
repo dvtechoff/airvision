@@ -5,7 +5,7 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 
-from routes import current, forecast, weather
+from routes import current, forecast, weather, realtime
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(current.router, prefix="/api", tags=["current"])
 app.include_router(forecast.router, prefix="/api", tags=["forecast"])
 app.include_router(weather.router, prefix="/api", tags=["weather"])
+app.include_router(realtime.router, prefix="/api", tags=["realtime"])
 
 @app.get("/")
 async def root():
@@ -40,9 +41,12 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs",
         "endpoints": {
-            "current": "/api/current?city=Delhi",
-            "forecast": "/api/forecast?city=Delhi", 
-            "weather": "/api/weather?city=Delhi"
+            "current": "/api/current?city=New York",
+            "forecast": "/api/forecast?city=New York", 
+            "weather": "/api/weather?city=New York",
+            "realtime": "/api/realtime/process?city=New York",
+            "cache_stats": "/api/realtime/cache/stats",
+            "batch_process": "/api/realtime/batch/process?cities=New York,Los Angeles"
         }
     }
 

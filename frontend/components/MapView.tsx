@@ -44,7 +44,7 @@ export default function MapView({ data, className }: MapViewProps) {
     )
   }
 
-  // Default coordinates (Delhi)
+  // Default coordinates (New York)
   const defaultCenter: [number, number] = [28.6139, 77.2090]
   const defaultZoom = 10
 

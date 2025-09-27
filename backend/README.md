@@ -98,7 +98,7 @@ Get current AQI data for a city.
 **Response:**
 ```json
 {
-  "city": "Delhi",
+  "city": "New York",
   "aqi": 175,
   "category": "Unhealthy",
   "pollutants": {
@@ -130,7 +130,7 @@ Get AQI forecast for a city.
 **Response:**
 ```json
 {
-  "city": "Delhi",
+  "city": "New York",
   "forecast": [
     {
       "time": "2024-01-01T13:00:00",

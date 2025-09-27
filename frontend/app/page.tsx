@@ -2,19 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Search, MapPin, TrendingUp, Activity } from 'lucide-react'
+import { Search, MapPin, TrendingUp, Activity, Zap, Database } from 'lucide-react'
 import AQICard from '@/components/AQICard'
 import WeatherCard from '@/components/WeatherCard'
-import apiClient, { AQIData, WeatherData } from '@/lib/api'
+import apiClient, { AQIData, WeatherData, RealtimeData } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export default function HomePage() {
-  const [city, setCity] = useState('Delhi')
+  const [city, setCity] = useState('New York')
   const [aqiData, setAqiData] = useState<AQIData | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchCity, setSearchCity] = useState('')
+  const [showRealtime, setShowRealtime] = useState(false)
 
   useEffect(() => {
     fetchData(city)
@@ -29,6 +32,14 @@ export default function HomePage() {
       ])
       setAqiData(aqi)
       setWeatherData(weather)
+      
+      // Also fetch real-time data for enhanced features
+      try {
+        const realtime = await apiClient.getRealtimeData(cityName)
+        setRealtimeData(realtime)
+      } catch (error) {
+        console.warn('Real-time data not available:', error)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -44,10 +55,9 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-black/20"></div>
+      <section className="relative bg-white border-b border-gray-200">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -55,13 +65,13 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 text-black">
               From Earth Data to{' '}
-              <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Safer Skies
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-3xl mx-auto">
               Professional air quality monitoring powered by NASA TEMPO satellite data. 
               Get real-time insights to protect your health and environment.
             </p>
@@ -81,10 +91,10 @@ export default function HomePage() {
                   placeholder="Enter city name..."
                   value={searchCity}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchCity(e.target.value)}
-                  className="pl-10 bg-white/90 border-0 text-gray-900"
+                  className="pl-10 bg-white border border-gray-300 text-gray-900"
                 />
               </div>
-              <Button type="submit" className="bg-white text-blue-600 hover:bg-gray-100">
+              <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">
                 Check Air Quality
               </Button>
             </motion.form>
@@ -102,10 +112,35 @@ export default function HomePage() {
           {/* Current Location Header */}
           <div className="flex items-center space-x-2 mb-8">
             <MapPin className="w-6 h-6 text-blue-600" />
-            <h2 className="text-3xl font-bold text-gray-900">{city}</h2>
-            <div className="flex items-center space-x-1 text-sm text-gray-500">
-              <Activity className="w-4 h-4" />
-              <span>Live data from NASA TEMPO</span>
+            <h2 className="text-3xl font-bold text-black">{city}</h2>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1 text-sm text-gray-500">
+                <Activity className="w-4 h-4" />
+                <span>Live data from NASA TEMPO</span>
+              </div>
+              {realtimeData && (
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="flex items-center space-x-1">
+                    <Zap className="w-3 h-3" />
+                    <span>Real-time Processing</span>
+                  </Badge>
+                  <Badge 
+                    variant={realtimeData.data_quality === 'excellent' ? 'default' : 'secondary'}
+                    className="text-xs"
+                  >
+                    {realtimeData.data_quality} quality
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRealtime(!showRealtime)}
+                    className="text-xs"
+                  >
+                    <Database className="w-3 h-3 mr-1" />
+                    {showRealtime ? 'Hide' : 'Show'} Details
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -131,15 +166,66 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Real-time Processing Details */}
+          {showRealtime && realtimeData && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 mb-8 border border-blue-200"
+            >
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                <Zap className="w-5 h-5 text-blue-600" />
+                <span>Real-time Processing Details</span>
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Processing Time</div>
+                  <div className="text-lg font-semibold text-blue-600">
+                    {realtimeData.processing_time_ms ? realtimeData.processing_time_ms.toFixed(1) : '0.0'}ms
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Data Quality</div>
+                  <div className="text-lg font-semibold capitalize">
+                    {realtimeData.data_quality}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Cloud Cover</div>
+                  <div className="text-lg font-semibold">
+                    {realtimeData.measurements?.cloud_fraction ? (realtimeData.measurements.cloud_fraction * 100).toFixed(1) : '0.0'}%
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <div className="text-sm text-gray-600 mb-1">Cache Status</div>
+                  <div className="text-lg font-semibold text-green-600">
+                    {realtimeData.cache_info?.cached ? 'Cached' : 'Fresh'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 text-sm text-gray-600">
+                <p>
+                  <strong>Source:</strong> {realtimeData.source || 'Unknown'} • 
+                  <strong> Resolution:</strong> {realtimeData.metadata?.spatial_resolution || 'Unknown'} • 
+                  <strong> Algorithm:</strong> {realtimeData.metadata?.retrieval_algorithm || 'Unknown'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Health Tips Section */}
           {aqiData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white rounded-xl card-shadow p-8"
+              className="bg-white rounded-xl border border-gray-200 shadow-sm p-8"
             >
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
+              <h3 className="text-2xl font-bold text-black mb-6 flex items-center space-x-2">
                 <TrendingUp className="w-6 h-6 text-blue-600" />
                 <span>Health Recommendations</span>
               </h3>
@@ -151,11 +237,11 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 * index }}
-                    className="bg-gray-50 rounded-lg p-4"
+                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
                   >
                     <div className="text-2xl mb-2">{tip.icon}</div>
-                    <h4 className="font-semibold text-gray-900 mb-2">{tip.title}</h4>
-                    <p className="text-sm text-gray-600">{tip.description}</p>
+                    <h4 className="font-semibold text-black mb-2">{tip.title}</h4>
+                    <p className="text-sm text-gray-700">{tip.description}</p>
                   </motion.div>
                 ))}
               </div>

@@ -26,8 +26,8 @@ export default function AboutPage() {
     },
     {
       icon: Globe,
-      title: "Global Coverage",
-      description: "Hourly air quality monitoring for North America with plans for global expansion",
+      title: "North American Coverage",
+      description: "Comprehensive air quality monitoring across North America with NASA TEMPO satellite data",
       color: "text-green-500"
     },
     {
@@ -93,30 +93,31 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="text-center py-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
-        <div className="max-w-4xl mx-auto px-4">
-          <Cloud className="w-16 h-16 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold mb-4">TEMPO Air Quality App</h1>
-          <p className="text-xl mb-6">
-            From EarthData to Action - Real-time air quality monitoring powered by NASA satellite data
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Badge className="bg-white/20 text-white px-4 py-2">
-              <Satellite className="w-4 h-4 mr-2" />
-              NASA TEMPO Data
-            </Badge>
-            <Badge className="bg-white/20 text-white px-4 py-2">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              AI Forecasting
-            </Badge>
-            <Badge className="bg-white/20 text-white px-4 py-2">
-              <Shield className="w-4 h-4 mr-2" />
-              Health Protection
-            </Badge>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200 card-shadow">
+          <div className="max-w-4xl mx-auto px-4">
+            <Cloud className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+            <h1 className="text-4xl font-bold mb-4 text-gray-900">AirVision</h1>
+            <p className="text-xl mb-6 text-gray-600">
+              From Earth Data to Safer Skies - Real-time air quality monitoring powered by NASA TEMPO satellite data
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Badge className="bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2">
+                <Satellite className="w-4 h-4 mr-2" />
+                NASA TEMPO Data
+              </Badge>
+              <Badge className="bg-green-100 text-green-700 border border-green-200 px-4 py-2">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                AI Forecasting
+              </Badge>
+              <Badge className="bg-purple-100 text-purple-700 border border-purple-200 px-4 py-2">
+                <Shield className="w-4 h-4 mr-2" />
+                Health Protection
+              </Badge>
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Mission Statement */}
@@ -314,6 +315,7 @@ export default function AboutPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

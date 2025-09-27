@@ -12,7 +12,7 @@ export default function ForecastPage() {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [city, setCity] = useState('Delhi')
+  const [city, setCity] = useState('New York')
   const [selectedPollutant, setSelectedPollutant] = useState('aqi')
 
   const fetchForecast = useCallback(async () => {

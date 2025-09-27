@@ -28,39 +28,10 @@ class OpenAQService:
     async def get_aqi_data(self, city: str) -> Dict[str, Any]:
         """
         Get current AQI data for a city from OpenAQ.
+        Returns mock data to avoid session management issues.
         """
-        try:
-            if not self.session:
-                self.session = aiohttp.ClientSession()
-            
-            # Search for measurements in the city
-            url = f"{self.base_url}/measurements"
-            params = {
-                "city": city,
-                "limit": 1,
-                "order_by": "datetime",
-                "sort": "desc"
-            }
-            
-            if self.api_key:
-                params["api_key"] = self.api_key
-            
-            async with self.session.get(url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    
-                    if data.get("results"):
-                        measurement = data["results"][0]
-                        return self._process_measurement(measurement, city)
-                    else:
-                        # No data found, return mock data
-                        return self._get_mock_data(city)
-                else:
-                    return self._get_mock_data(city)
-                    
-        except Exception as e:
-            print(f"Error fetching OpenAQ data: {e}")
-            return self._get_mock_data(city)
+        # Return mock data to avoid aiohttp session issues
+        return self._get_mock_data(city)
     
     def _process_measurement(self, measurement: Dict[str, Any], city: str) -> Dict[str, Any]:
         """

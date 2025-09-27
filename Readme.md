@@ -147,16 +147,16 @@ The backend API will be available at `http://localhost:8000`
 ## 🌐 API Endpoints
 
 ### Current Air Quality
-- `GET /api/current?city=Delhi` - Get current AQI data
-- `GET /api/current/multiple?cities=Delhi,Mumbai` - Get multiple cities
+- `GET /api/current?city=New York` - Get current AQI data
+- `GET /api/current/multiple?cities=New York,Mumbai` - Get multiple cities
 
 ### Forecast
-- `GET /api/forecast?city=Delhi&hours=24` - Get AQI forecast
+- `GET /api/forecast?city=New York&hours=24` - Get AQI forecast
 - `GET /api/forecast/accuracy` - Get model accuracy metrics
 
 ### Weather
-- `GET /api/weather?city=Delhi` - Get current weather
-- `GET /api/weather/forecast?city=Delhi&days=5` - Get weather forecast
+- `GET /api/weather?city=New York` - Get current weather
+- `GET /api/weather/forecast?city=New York&days=5` - Get weather forecast
 
 ## 🚀 Deployment
 

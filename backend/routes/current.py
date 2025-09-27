@@ -24,10 +24,10 @@ async def get_current_aqi(
     try:
         # Initialize services
         openaq_service = OpenAQService()
-        tempo_service = TEMPOService()
         
         # Get data from multiple sources concurrently
         tasks = [openaq_service.get_aqi_data(city)]
+        tempo_service = TEMPOService()
         
         if include_tempo:
             tasks.append(tempo_service.get_tempo_data(city))
