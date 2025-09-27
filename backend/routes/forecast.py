@@ -2,9 +2,14 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from datetime import datetime, timedelta
 import random
+import os
+from dotenv import load_dotenv
 
 from models.schemas import ForecastData, ForecastPoint, ErrorResponse
-from services.forecast_service import ForecastService
+from services.enhanced_forecast_service import EnhancedForecastService
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter()
 
@@ -14,14 +19,16 @@ async def get_aqi_forecast(
     hours: int = Query(24, ge=1, le=72, description="Number of hours to forecast (1-72)")
 ):
     """
-    Get AQI forecast for a specific city using machine learning models.
+    Get AQI forecast for a specific city using real OpenWeatherMap data
+    combined with machine learning models.
     
-    The forecast uses ARIMA models trained on historical AQI data
-    combined with weather patterns and satellite observations.
+    The forecast uses current real AQI data as baseline and applies
+    predictive models based on weather patterns, time factors, and
+    satellite observations.
     """
     try:
-        # Initialize forecast service
-        forecast_service = ForecastService()
+        # Initialize enhanced forecast service
+        forecast_service = EnhancedForecastService()
         
         # Get forecast data
         forecast_data = await forecast_service.get_forecast(city, hours)
@@ -29,7 +36,8 @@ async def get_aqi_forecast(
         return forecast_data
         
     except Exception as e:
-        # Return mock data if forecast service fails
+        print(f"Forecast error: {e}")
+        # Return realistic fallback data if forecast service fails
         mock_forecast = generate_mock_forecast(city, hours)
         return mock_forecast
 

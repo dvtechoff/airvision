@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 import asyncio
+import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 from models.schemas import AQIData, Pollutants, ErrorResponse
 from services.simple_air_quality_service import SimpleAirQualityService
 from services.tempo_service import TEMPOService
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter()
 
@@ -22,8 +27,9 @@ async def get_current_aqi(
     - NASA TEMPO satellite data (if available)
     """
     try:
-        # Use the simple service that works without database
-        simple_service = SimpleAirQualityService()
+        # Use the simple service with OpenWeatherMap API key
+        openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
+        simple_service = SimpleAirQualityService(openweather_api_key)
         
         # Get comprehensive data
         result = await simple_service.get_comprehensive_air_quality(city, include_tempo=include_tempo)

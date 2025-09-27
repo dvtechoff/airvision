@@ -8,14 +8,14 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 
-from services.openaq_service_http import OpenAQService
+from services.openweather_aqi_service import OpenWeatherAQService
 from services.tempo_service import TEMPOService
 
 logger = logging.getLogger(__name__)
 
 class SimpleAirQualityService:
-    def __init__(self):
-        self.openaq_service = OpenAQService()
+    def __init__(self, openweather_api_key: Optional[str] = None):
+        self.openweather_service = OpenWeatherAQService(openweather_api_key)
         self.tempo_service = TEMPOService()
         self.logger = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ class SimpleAirQualityService:
         }
         
         try:
-            # Get OpenAQ data (will be mock data since API requires key)
-            self.logger.info(f"Getting OpenAQ data for {city}")
-            openaq_data = await self.openaq_service.get_aqi_data(city)
+            # Get OpenWeatherMap data (real air quality data)
+            self.logger.info(f"Getting OpenWeatherMap AQI data for {city}")
+            openweather_data = await self.openweather_service.get_aqi_data(city)
             
-            if openaq_data:
-                result["openaq_data"] = openaq_data
-                result["data_sources"].append("OpenAQ Service")
+            if openweather_data:
+                result["openaq_data"] = openweather_data  # Keep same key for compatibility
+                result["data_sources"].append("OpenWeatherMap Air Pollution API")
                 
             # Get TEMPO data if requested
             if include_tempo:
@@ -56,7 +56,7 @@ class SimpleAirQualityService:
                     self.logger.warning(f"TEMPO data unavailable for {city}: {e}")
             
             # Create combined result prioritizing the best available data
-            result["combined_aqi"] = self._create_combined_result(openaq_data, result.get("tempo_data"))
+            result["combined_aqi"] = self._create_combined_result(openweather_data, result.get("tempo_data"))
             
             return result
             
@@ -74,20 +74,21 @@ class SimpleAirQualityService:
                 }
             }
 
-    def _create_combined_result(self, openaq_data: Optional[Dict], tempo_data: Optional[Dict]) -> Dict[str, Any]:
+    def _create_combined_result(self, openweather_data: Optional[Dict], tempo_data: Optional[Dict]) -> Dict[str, Any]:
         """Create combined AQI result from available data sources"""
         
-        # Prioritize OpenAQ data if available and reliable
-        if openaq_data and openaq_data.get("aqi"):
+        # Prioritize OpenWeatherMap data if available and reliable
+        if openweather_data and openweather_data.get("aqi"):
             return {
-                "aqi": openaq_data["aqi"],
-                "category": openaq_data["category"],
-                "pollutants": openaq_data.get("pollutants", {}),
-                "source": openaq_data.get("source", "OpenAQ"),
-                "timestamp": openaq_data.get("timestamp", datetime.utcnow()),
-                "primary_source": "OpenAQ Ground Measurements" if "Real Data" in openaq_data.get("source", "") else "OpenAQ Mock Data",
-                "confidence": "high" if "Real Data" in openaq_data.get("source", "") else "medium",
-                "note": openaq_data.get("note", "")
+                "aqi": openweather_data["aqi"],
+                "category": openweather_data["category"],
+                "pollutants": openweather_data.get("pollutants", {}),
+                "source": openweather_data.get("source", "OpenWeatherMap"),
+                "timestamp": openweather_data.get("timestamp", datetime.utcnow()),
+                "primary_source": "OpenWeatherMap Real Data" if "Real-time" in openweather_data.get("source", "") else "OpenWeatherMap Fallback",
+                "confidence": "high" if "Real-time" in openweather_data.get("source", "") else "medium",
+                "note": openweather_data.get("note", ""),
+                "coordinates": openweather_data.get("coordinates")
             }
         
         # Fallback to TEMPO data
