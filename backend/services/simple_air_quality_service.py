@@ -9,14 +9,14 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 
 from services.openweather_aqi_service import OpenWeatherAQService
-from services.tempo_service import TEMPOService
+from services.tempo_service_earthaccess import tempo_service_earthaccess
 
 logger = logging.getLogger(__name__)
 
 class SimpleAirQualityService:
     def __init__(self, openweather_api_key: Optional[str] = None):
         self.openweather_service = OpenWeatherAQService(openweather_api_key)
-        self.tempo_service = TEMPOService()
+        self.tempo_service = tempo_service_earthaccess
         self.logger = logging.getLogger(__name__)
 
     async def get_comprehensive_air_quality(self, city: str, include_tempo: bool = True) -> Dict[str, Any]:
@@ -36,7 +36,8 @@ class SimpleAirQualityService:
         try:
             # Get OpenWeatherMap data (real air quality data)
             self.logger.info(f"Getting OpenWeatherMap AQI data for {city}")
-            openweather_data = await self.openweather_service.get_aqi_data(city)
+            async with self.openweather_service:
+                openweather_data = await self.openweather_service.get_aqi_data(city)
             
             if openweather_data:
                 result["openaq_data"] = openweather_data  # Keep same key for compatibility
@@ -46,12 +47,14 @@ class SimpleAirQualityService:
             if include_tempo:
                 self.logger.info(f"Getting TEMPO data for {city}")
                 try:
-                    async with self.tempo_service:
-                        tempo_data = await self.tempo_service.get_tempo_data(city)
+                    tempo_data = await self.tempo_service.get_tempo_data(city)
                     
-                    if tempo_data and "error" not in tempo_data:
+                    if tempo_data and tempo_data.get("success"):
                         result["tempo_data"] = tempo_data
                         result["data_sources"].append("NASA TEMPO")
+                        self.logger.info(f"Successfully retrieved TEMPO data for {city}")
+                    else:
+                        self.logger.warning(f"TEMPO data not available for {city}")
                 except Exception as e:
                     self.logger.warning(f"TEMPO data unavailable for {city}: {e}")
             

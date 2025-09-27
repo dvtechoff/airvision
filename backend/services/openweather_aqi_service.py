@@ -3,6 +3,7 @@ OpenWeatherMap Air Pollution API Service
 Fast implementation using OpenWeatherMap's air quality data
 """
 
+import os
 import asyncio
 import logging
 from typing import Dict, List, Optional, Any
@@ -13,9 +14,16 @@ logger = logging.getLogger(__name__)
 
 class OpenWeatherAQService:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or "your_openweather_api_key_here"  # Replace with actual key
+        # Load API key from environment if not provided
+        self.api_key = api_key or os.getenv('OPENWEATHER_API_KEY', 'your_openweather_api_key_here')
         self.client = None
         self.logger = logging.getLogger(__name__)
+        
+        # Log API key status (safely)
+        if self.api_key and self.api_key != 'your_openweather_api_key_here':
+            self.logger.info(f"OpenWeatherMap API key loaded: {self.api_key[:8]}...")
+        else:
+            self.logger.warning("No valid OpenWeatherMap API key found")
         
         # City coordinates mapping
         self.city_coords = {
@@ -37,6 +45,28 @@ class OpenWeatherAQService:
         }
 
     async def initialize_client(self):
+        """Initialize HTTP client"""
+        if not self.client:
+            self.client = httpx.AsyncClient(
+                timeout=30.0,
+                headers={"User-Agent": "AirVision-App/1.0"}
+            )
+            self.logger.info("OpenWeatherMap Air Pollution client initialized")
+
+    async def close_client(self):
+        """Close HTTP client properly"""
+        if self.client:
+            await self.client.aclose()
+            self.client = None
+            self.logger.info("OpenWeatherMap client closed")
+
+    async def __aenter__(self):
+        """Async context manager entry"""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        await self.close_client()
         """Initialize HTTP client"""
         if not self.client:
             self.client = httpx.AsyncClient(
@@ -115,11 +145,12 @@ class OpenWeatherAQService:
                 "aqi": epa_aqi,
                 "category": self._get_aqi_category(epa_aqi),
                 "pollutants": {k: round(v, 1) for k, v in pollutants.items() if v > 0},
-                "source": "OpenWeatherMap Air Pollution API",
+                "source": "OpenWeatherMap Air Pollution API (Real-time)",
                 "timestamp": datetime.utcnow(),
                 "coordinates": coords,
-                "openweather_aqi": ow_aqi,
-                "note": "Real-time air quality data from OpenWeatherMap"
+                "note": f"Real air quality data from OpenWeatherMap for {city}",
+                "data_quality": "high",
+                "openweather_aqi": ow_aqi
             }
             
         except Exception as e:

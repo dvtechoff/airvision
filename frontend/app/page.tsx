@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, MapPin, TrendingUp, Activity, Zap, Database } from 'lucide-react'
+import { Search, MapPin, TrendingUp, Activity, Zap, Database, RefreshCw } from 'lucide-react'
 import AQICard from '@/components/AQICard'
 import WeatherCard from '@/components/WeatherCard'
 import apiClient, { AQIData, WeatherData, RealtimeData } from '@/lib/api'
@@ -10,40 +10,176 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
+// Cache management
+interface CachedData {
+  aqiData: AQIData | null
+  weatherData: WeatherData | null
+  realtimeData: RealtimeData | null
+  timestamp: number
+  city: string
+}
+
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+const CACHE_KEY = 'airvision_cache'
+
 export default function HomePage() {
   const [city, setCity] = useState('New York')
   const [aqiData, setAqiData] = useState<AQIData | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchCity, setSearchCity] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
-    fetchData(city)
+    loadDataWithCache(city)
   }, [city])
 
-  const fetchData = async (cityName: string) => {
-    setLoading(true)
-    setError(null)
+  const loadCachedData = (): CachedData | null => {
+    if (typeof window === 'undefined') return null
+    
     try {
-      const [aqi, weather] = await Promise.all([
-        apiClient.getCurrentAQI(cityName),
-        apiClient.getWeather(cityName)
-      ])
-      setAqiData(aqi)
-      setWeatherData(weather)
-      
-      // Also fetch real-time data for enhanced features
-      try {
-        const realtime = await apiClient.getRealtimeData(cityName)
-        setRealtimeData(realtime)
-      } catch (error) {
-        console.warn('Real-time data not available:', error)
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (cached) {
+        const data: CachedData = JSON.parse(cached)
+        const now = Date.now()
+        if (now - data.timestamp < CACHE_DURATION && data.city === city) {
+          return data
+        }
       }
     } catch (error) {
-      console.error('Error fetching data:', error)
-      setError(`Failed to fetch data for ${cityName}. Please try another city.`)
+      console.warn('Error loading cache:', error)
+    }
+    return null
+  }
+
+  const saveCachedData = (data: CachedData) => {
+    if (typeof window === 'undefined') return
+    
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data))
+    } catch (error) {
+      console.warn('Error saving cache:', error)
+    }
+  }
+
+  const loadDataWithCache = async (cityName: string) => {
+    setLoading(true)
+    setError(null)
+    
+    // Try to load from cache first
+    const cachedData = loadCachedData()
+    if (cachedData && cachedData.city === cityName) {
+      console.log('Loading from cache for:', cityName)
+      setAqiData(cachedData.aqiData)
+      setWeatherData(cachedData.weatherData)
+      setRealtimeData(cachedData.realtimeData)
+      setLastUpdated(new Date(cachedData.timestamp))
+      setLoading(false)
+      return
+    }
+
+    // If no cache or expired, fetch fresh data
+    await fetchData(cityName)
+  }
+
+  const refreshData = async () => {
+    setRefreshing(true)
+    await fetchData(city, true)
+    setRefreshing(false)
+  }
+
+  const fetchData = async (cityName: string, forceRefresh: boolean = false) => {
+    if (!forceRefresh) {
+      setLoading(true)
+    }
+    setError(null)
+    
+    const startTime = performance.now()
+    console.log('🚀 Starting data fetch for:', cityName, forceRefresh ? '(forced)' : '(normal)')
+    const baseURL = 'http://localhost:8000'
+    
+    try {
+      console.log('⏰ Fetch start time:', new Date().toISOString())
+      
+      // Use Promise.all for parallel requests instead of sequential
+      const [aqiResponse, weatherResponse] = await Promise.all([
+        fetch(`${baseURL}/api/current?city=${encodeURIComponent(cityName)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        }),
+        fetch(`${baseURL}/api/weather?city=${encodeURIComponent(cityName)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        })
+      ])
+      
+      const aqiTime = performance.now()
+      console.log('📊 AQI response time:', aqiTime - startTime, 'ms, status:', aqiResponse.status)
+      
+      if (!aqiResponse.ok) {
+        throw new Error(`AQI API error: ${aqiResponse.status} ${aqiResponse.statusText}`)
+      }
+      
+      if (!weatherResponse.ok) {
+        throw new Error(`Weather API error: ${weatherResponse.status} ${weatherResponse.statusText}`)
+      }
+      
+      // Parse JSON in parallel
+      const [fetchedAqiData, fetchedWeatherData] = await Promise.all([
+        aqiResponse.json(),
+        weatherResponse.json()
+      ])
+      
+      const parseTime = performance.now()
+      console.log('📝 JSON parsing time:', parseTime - aqiTime, 'ms')
+      console.log('✅ AQI data received:', fetchedAqiData)
+      console.log('🌤️ Weather data received:', fetchedWeatherData)
+      
+      setAqiData(fetchedAqiData)
+      setWeatherData(fetchedWeatherData)
+      
+      // Optional realtime data (don't block UI for this) - Skip for now to improve speed
+      /*
+      let fetchedRealtimeData = null
+      try {
+        const realtimeResponse = await fetch(`${baseURL}/api/realtime/process?city=${encodeURIComponent(cityName)}`)
+        if (realtimeResponse.ok) {
+          fetchedRealtimeData = await realtimeResponse.json()
+          setRealtimeData(fetchedRealtimeData)
+          console.log('🔄 Realtime data received:', fetchedRealtimeData)
+        }
+      } catch (error) {
+        console.warn('⚠️ Real-time data not available (non-critical):', error)
+      }
+      */
+      
+      // Save to cache
+      const cacheData: CachedData = {
+        aqiData: fetchedAqiData,
+        weatherData: fetchedWeatherData,
+        realtimeData: null, // Skip realtime for speed
+        timestamp: Date.now(),
+        city: cityName
+      }
+      saveCachedData(cacheData)
+      setLastUpdated(new Date())
+      
+      const totalTime = performance.now() - startTime
+      console.log('🏁 Total fetch time:', totalTime, 'ms')
+      
+    } catch (error) {
+      const errorTime = performance.now() - startTime
+      console.error('❌ Error after', errorTime, 'ms:', error)
+      setError(`Failed to fetch data for ${cityName}. ${error instanceof Error ? error.message : 'Please try again.'}`)
     } finally {
       setLoading(false)
     }
@@ -142,19 +278,36 @@ export default function HomePage() {
       {/* Dashboard Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
-              Live Environmental Dashboard - {city}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Real-time air quality and weather data from OpenWeatherMap API
-            </p>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
+                Live Environmental Dashboard - {city}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
+                Real-time air quality and weather data from OpenWeatherMap API
+              </p>
+              
+              {/* Cache Status and Refresh */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                {lastUpdated && (
+                  <div className="text-sm text-gray-500">
+                    Last updated: {lastUpdated.toLocaleTimeString()}
+                  </div>
+                )}
+                <button
+                  onClick={refreshData}
+                  disabled={refreshing}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh Data'}
+                </button>
+              </div>
+            </motion.div>
 
           {error && (
             <motion.div
@@ -181,7 +334,7 @@ export default function HomePage() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl blur-xl"></div>
               <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-1">
-                {loading ? (
+                {loading && !aqiData ? (
                   <div className="h-80 flex items-center justify-center">
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
@@ -189,16 +342,21 @@ export default function HomePage() {
                     </div>
                   </div>
                 ) : aqiData ? (
-                  <AQICard data={aqiData} />
+                  <div className="relative">
+                    {refreshing && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      </div>
+                    )}
+                    <AQICard data={aqiData} />
+                  </div>
                 ) : (
                   <div className="h-80 flex items-center justify-center">
                     <p className="text-gray-500">No air quality data available</p>
                   </div>
                 )}
               </div>
-            </motion.div>
-            
-            <motion.div
+            </motion.div>            <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
@@ -206,7 +364,7 @@ export default function HomePage() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-2xl blur-xl"></div>
               <div className="relative bg-white rounded-2xl shadow-xl border border-gray-200 p-1">
-                {loading ? (
+                {loading && !weatherData ? (
                   <div className="h-80 flex items-center justify-center">
                     <div className="flex flex-col items-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
@@ -214,7 +372,14 @@ export default function HomePage() {
                     </div>
                   </div>
                 ) : weatherData ? (
-                  <WeatherCard data={weatherData} />
+                  <div className="relative">
+                    {refreshing && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+                      </div>
+                    )}
+                    <WeatherCard data={weatherData} />
+                  </div>
                 ) : (
                   <div className="h-80 flex items-center justify-center">
                     <p className="text-gray-500">No weather data available</p>
