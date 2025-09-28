@@ -9,6 +9,7 @@ import httpx
 from models.schemas import ForecastData, ForecastPoint
 from services.openweather_aqi_service import OpenWeatherAQService
 from services.tempo_service import TEMPOService
+from services.openaq_location_service import OpenAQLocationService
 
 # Load environment variables
 load_dotenv()
@@ -16,21 +17,24 @@ load_dotenv()
 class EnhancedForecastService:
     """
     Enhanced service for generating AQI forecasts using real OpenWeatherMap data
-    combined with NASA TEMPO satellite data and machine learning predictions.
+    combined with NASA TEMPO satellite data, OpenAQ ground station data,
+    and advanced machine learning predictions.
     """
     
     def __init__(self):
         self.api_key = os.getenv('OPENWEATHER_API_KEY')
         self.openweather_service = OpenWeatherAQService(self.api_key)
         self.tempo_service = TEMPOService()
+        self.openaq_service = OpenAQLocationService()
     
     async def get_forecast(self, city: str, hours: int = 24) -> ForecastData:
         """
         Generate AQI forecast for a city using real current data as baseline
-        combined with TEMPO satellite atmospheric measurements.
+        combined with TEMPO satellite atmospheric measurements and 
+        OpenAQ ground station validation data.
         """
         try:
-            # Get current real AQI data as baseline
+            # Get current real AQI data as baseline from OpenWeatherMap
             current_data = await self.openweather_service.get_aqi_data(city)
             
             if not current_data:
@@ -43,9 +47,12 @@ class EnhancedForecastService:
             # Get TEMPO satellite data for atmospheric context
             tempo_data = await self._get_tempo_data_for_city(city)
             
-            # Generate enhanced forecast points using both ground + satellite data
-            forecast_points = await self._generate_tempo_enhanced_forecast_points(
-                city, current_aqi, current_pollutants, tempo_data, hours
+            # Get OpenAQ ground station data for validation and calibration
+            openaq_data = await self._get_openaq_data_for_city(city)
+            
+            # Generate enhanced forecast points using all three data sources
+            forecast_points = await self._generate_three_source_forecast_points(
+                city, current_aqi, current_pollutants, tempo_data, openaq_data, hours
             )
             
             return ForecastData(
@@ -67,6 +74,204 @@ class EnhancedForecastService:
         except Exception as e:
             print(f"Error fetching TEMPO data for {city}: {e}")
             return {}
+    
+    async def _get_openaq_data_for_city(self, city: str) -> Dict[str, Any]:
+        """
+        Get OpenAQ ground station data for the given city to calibrate and validate forecasts.
+        """
+        try:
+            # Find closest OpenAQ monitoring station
+            location = await self.openaq_service.find_closest_location(city)
+            
+            if location and location.get('openaq_id'):
+                # Get recent air quality measurements
+                measurements_data = await self.openaq_service.get_air_quality_data(
+                    location['openaq_id'], 
+                    parameters=['pm25', 'pm10', 'no2', 'o3']
+                )
+                
+                if measurements_data and 'aqi_data' in measurements_data:
+                    return {
+                        'location_info': location,
+                        'measurements': measurements_data,
+                        'aqi_data': measurements_data['aqi_data'],
+                        'source': 'OpenAQ Ground Station'
+                    }
+            
+            return {}
+        except Exception as e:
+            print(f"Error fetching OpenAQ data for {city}: {e}")
+            return {}
+    
+    async def _generate_three_source_forecast_points(
+        self, 
+        city: str, 
+        current_aqi: int, 
+        current_pollutants: Dict[str, float], 
+        tempo_data: Dict[str, Any],
+        openaq_data: Dict[str, Any],
+        hours: int
+    ) -> List[ForecastPoint]:
+        """
+        Generate forecast points using OpenWeatherMap + TEMPO satellite + OpenAQ ground station data
+        for maximum accuracy through three-source data fusion.
+        """
+        forecast_points = []
+        
+        # Get weather forecast to influence AQI predictions
+        weather_trend = await self._get_weather_trend(city)
+        
+        # Extract data from all three sources
+        tempo_measurements = tempo_data.get('measurements', {})
+        openaq_measurements = openaq_data.get('aqi_data', {})
+        
+        # Calculate baseline calibration factor using OpenAQ ground truth
+        calibration_factor = self._calculate_ground_station_calibration(
+            current_aqi, current_pollutants, openaq_measurements
+        )
+        
+        for i in range(hours):
+            forecast_time = datetime.now() + timedelta(hours=i)
+            hour = forecast_time.hour
+            day_of_week = forecast_time.weekday()
+            
+            # Calculate predicted AQI using three-source enhanced algorithm
+            predicted_aqi = self._predict_aqi_with_three_sources(
+                current_aqi, current_pollutants, tempo_measurements, openaq_measurements,
+                calibration_factor, hour, day_of_week, i, weather_trend
+            )
+            
+            category = self._get_aqi_category(predicted_aqi)
+            
+            forecast_points.append(ForecastPoint(
+                time=forecast_time,
+                aqi=predicted_aqi,
+                category=category
+            ))
+        
+        return forecast_points
+    
+    def _calculate_ground_station_calibration(
+        self, 
+        api_aqi: int, 
+        api_pollutants: Dict[str, float],
+        ground_station_data: Dict[str, Any]
+    ) -> float:
+        """
+        Calculate calibration factor based on ground station vs API data comparison.
+        This helps correct for systematic biases in the API data.
+        """
+        if not ground_station_data or 'aqi' not in ground_station_data:
+            return 1.0  # No calibration if no ground station data
+        
+        ground_aqi = ground_station_data.get('aqi', api_aqi)
+        
+        if api_aqi > 0:
+            # Calculate ratio, but limit extreme adjustments
+            calibration_ratio = ground_aqi / api_aqi
+            # Limit calibration to ±30% to avoid over-correction
+            return max(0.7, min(1.3, calibration_ratio))
+        
+        return 1.0
+    
+    def _predict_aqi_with_three_sources(
+        self,
+        base_aqi: int,
+        current_pollutants: Dict[str, float],
+        tempo_measurements: Dict[str, float],
+        openaq_measurements: Dict[str, Any],
+        calibration_factor: float,
+        hour: int,
+        day_of_week: int,
+        hours_ahead: int,
+        weather_trend: Dict[str, Any]
+    ) -> int:
+        """
+        Ultimate AQI prediction using OpenWeatherMap + TEMPO satellite + OpenAQ ground stations
+        with advanced data fusion and calibration techniques.
+        """
+        # Start with calibrated base AQI from ground stations
+        predicted_aqi = base_aqi * calibration_factor
+        
+        # TEMPO Atmospheric Enhancement Factors (same as before)
+        tempo_factor = 1.0
+        
+        if tempo_measurements:
+            # NO2 Column Density Impact
+            no2_column = tempo_measurements.get('no2_column', 0)
+            if no2_column > 5e15:
+                tempo_factor *= 1.15
+            elif no2_column > 3e15:
+                tempo_factor *= 1.08
+            elif no2_column < 1e15:
+                tempo_factor *= 0.92
+            
+            # O3 Column Density Impact
+            o3_column = tempo_measurements.get('o3_column', 0)
+            if o3_column > 350:
+                tempo_factor *= 1.12
+            elif o3_column > 300:
+                tempo_factor *= 1.05
+            elif o3_column < 250:
+                tempo_factor *= 0.95
+            
+            # HCHO Column Impact
+            hcho_column = tempo_measurements.get('hcho_column', 0)
+            if hcho_column > 3e15:
+                tempo_factor *= 1.10
+            elif hcho_column > 2e15:
+                tempo_factor *= 1.04
+            elif hcho_column < 1e15:
+                tempo_factor *= 0.96
+            
+            # Aerosol Optical Depth Impact
+            aod = tempo_measurements.get('aerosol_optical_depth', 0)
+            if aod > 0.5:
+                tempo_factor *= 1.20
+            elif aod > 0.3:
+                tempo_factor *= 1.10
+            elif aod < 0.1:
+                tempo_factor *= 0.85
+        
+        # OpenAQ Ground Station Enhancement
+        openaq_factor = 1.0
+        if openaq_measurements and 'pollutants' in openaq_measurements:
+            ground_pollutants = openaq_measurements['pollutants']
+            
+            # Use ground station pollutant trends for better prediction
+            for pollutant, concentration in ground_pollutants.items():
+                if pollutant in current_pollutants and current_pollutants[pollutant] > 0:
+                    # Calculate trend factor from ground station data
+                    trend_factor = concentration / current_pollutants[pollutant]
+                    # Moderate the influence (weight ground station data at 40%)
+                    openaq_factor *= (0.6 + 0.4 * trend_factor)
+        
+        # Apply traditional factors
+        hour_factor = self._get_hour_factor(hour)
+        day_factor = self._get_day_factor(day_of_week)
+        weather_factor = self._get_weather_factor(weather_trend, hours_ahead)
+        
+        # Temporal degradation with enhanced confidence from ground stations
+        base_degradation = 0.02  # Base uncertainty per hour
+        if openaq_measurements:
+            base_degradation *= 0.7  # Ground station data reduces uncertainty
+        
+        time_degradation = 1.0 - (hours_ahead * base_degradation)
+        time_degradation = max(0.6, time_degradation)  # Higher confidence floor
+        
+        # Combine all factors with data source weighting
+        final_factor = (
+            tempo_factor * 0.3 +           # 30% satellite atmospheric data
+            openaq_factor * 0.4 +          # 40% ground station validation  
+            (hour_factor * day_factor * weather_factor) * 0.3  # 30% meteorological
+        ) * time_degradation
+        
+        predicted_aqi = int(predicted_aqi * final_factor)
+        
+        # Ensure realistic bounds
+        predicted_aqi = max(0, min(500, predicted_aqi))
+        
+        return predicted_aqi
     
     async def _generate_tempo_enhanced_forecast_points(
         self, 
