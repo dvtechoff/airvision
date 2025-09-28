@@ -1,4 +1,4 @@
-# TEMPO Air Quality App
+# AirVision - From EarthData to Safer Skies
 
 A comprehensive full-stack application for real-time air quality monitoring using NASA TEMPO satellite data, built for the NASA Space Challenge.
 
@@ -51,23 +51,19 @@ tempo-air-quality-app/
 │   └── styles/              # Global styles
 │
 ├── backend/                 # FastAPI backend
-│   ├── routes/              # API endpoints
-│   │   ├── current.py       # Current AQI endpoint
-│   │   ├── forecast.py      # Forecast endpoint
-│   │   └── weather.py       # Weather endpoint
-│   ├── services/            # Data services
-│   │   ├── openaq_service.py    # OpenAQ API integration
-│   │   ├── weather_service.py   # Weather API integration
-│   │   ├── tempo_service.py     # TEMPO data processing
-│   │   └── forecast_service.py  # ML forecasting
-│   ├── models/              # Data models
-│   │   └── schemas.py       # Pydantic schemas
-│   └── main.py              # FastAPI application
-│
-└── deployment/              # Deployment configs
-    ├── vercel.json          # Vercel frontend config
-    ├── render.yaml          # Render backend config
-    └── Dockerfile           # Docker configuration
+    ├── routes/              # API endpoints
+    │   ├── current.py       # Current AQI endpoint
+    │   ├── forecast.py      # Forecast endpoint
+    │   └── weather.py       # Weather endpoint
+    ├── services/            # Data services
+    │   ├── openaq_service.py    # OpenAQ API integration
+    │   ├── weather_service.py   # Weather API integration
+    │   ├── tempo_service.py     # TEMPO data processing
+    │   └── forecast_service.py  # ML forecasting
+    ├── models/              # Data models
+    │   └── schemas.py       # Pydantic schemas
+    └── main.py              # FastAPI application
+
 ```
 
 ## 🛠️ Installation & Setup
