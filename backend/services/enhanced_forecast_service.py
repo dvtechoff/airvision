@@ -8,6 +8,7 @@ import httpx
 
 from models.schemas import ForecastData, ForecastPoint
 from services.openweather_aqi_service import OpenWeatherAQService
+from services.tempo_service import TEMPOService
 
 # Load environment variables
 load_dotenv()
@@ -15,16 +16,18 @@ load_dotenv()
 class EnhancedForecastService:
     """
     Enhanced service for generating AQI forecasts using real OpenWeatherMap data
-    combined with machine learning predictions.
+    combined with NASA TEMPO satellite data and machine learning predictions.
     """
     
     def __init__(self):
         self.api_key = os.getenv('OPENWEATHER_API_KEY')
         self.openweather_service = OpenWeatherAQService(self.api_key)
+        self.tempo_service = TEMPOService()
     
     async def get_forecast(self, city: str, hours: int = 24) -> ForecastData:
         """
-        Generate AQI forecast for a city using real current data as baseline.
+        Generate AQI forecast for a city using real current data as baseline
+        combined with TEMPO satellite atmospheric measurements.
         """
         try:
             # Get current real AQI data as baseline
@@ -37,9 +40,12 @@ class EnhancedForecastService:
             current_aqi = current_data.get('aqi', 100)
             current_pollutants = current_data.get('pollutants', {})
             
-            # Generate forecast points based on real data
-            forecast_points = await self._generate_enhanced_forecast_points(
-                city, current_aqi, current_pollutants, hours
+            # Get TEMPO satellite data for atmospheric context
+            tempo_data = await self._get_tempo_data_for_city(city)
+            
+            # Generate enhanced forecast points using both ground + satellite data
+            forecast_points = await self._generate_tempo_enhanced_forecast_points(
+                city, current_aqi, current_pollutants, tempo_data, hours
             )
             
             return ForecastData(
@@ -50,6 +56,208 @@ class EnhancedForecastService:
         except Exception as e:
             print(f"Error generating enhanced forecast: {e}")
             return self._generate_realistic_forecast(city, hours)
+    
+    async def _get_tempo_data_for_city(self, city: str) -> Dict[str, Any]:
+        """
+        Get TEMPO satellite data for the given city to enhance forecast accuracy.
+        """
+        try:
+            tempo_data = await self.tempo_service.get_tempo_data(city)
+            return tempo_data if tempo_data else {}
+        except Exception as e:
+            print(f"Error fetching TEMPO data for {city}: {e}")
+            return {}
+    
+    async def _generate_tempo_enhanced_forecast_points(
+        self, 
+        city: str, 
+        current_aqi: int, 
+        current_pollutants: Dict[str, float], 
+        tempo_data: Dict[str, Any],
+        hours: int
+    ) -> List[ForecastPoint]:
+        """
+        Generate forecast points using real current data, TEMPO satellite data,
+        and enhanced predictive models for superior accuracy.
+        """
+        forecast_points = []
+        
+        # Get weather forecast to influence AQI predictions
+        weather_trend = await self._get_weather_trend(city)
+        
+        # Extract TEMPO satellite measurements for atmospheric context
+        tempo_measurements = tempo_data.get('measurements', {})
+        
+        for i in range(hours):
+            forecast_time = datetime.now() + timedelta(hours=i)
+            hour = forecast_time.hour
+            day_of_week = forecast_time.weekday()
+            
+            # Calculate predicted AQI using TEMPO-enhanced algorithm
+            predicted_aqi = self._predict_aqi_with_tempo(
+                current_aqi, current_pollutants, tempo_measurements, 
+                hour, day_of_week, i, weather_trend
+            )
+            
+            category = self._get_aqi_category(predicted_aqi)
+            
+            forecast_points.append(ForecastPoint(
+                time=forecast_time,
+                aqi=predicted_aqi,
+                category=category
+            ))
+        
+        return forecast_points
+    
+    def _predict_aqi_with_tempo(
+        self,
+        base_aqi: int,
+        current_pollutants: Dict[str, float],
+        tempo_measurements: Dict[str, float],
+        hour: int,
+        day_of_week: int,
+        hours_ahead: int,
+        weather_trend: Dict[str, Any]
+    ) -> int:
+        """
+        Enhanced AQI prediction using TEMPO satellite atmospheric measurements
+        combined with ground-level data and meteorological factors.
+        """
+        # Start with base AQI from ground measurements
+        predicted_aqi = base_aqi
+        
+        # TEMPO Atmospheric Enhancement Factors
+        tempo_factor = 1.0
+        
+        if tempo_measurements:
+            # NO2 Column Density Impact
+            no2_column = tempo_measurements.get('no2_column', 0)
+            if no2_column > 5e15:  # High tropospheric NO2 (molecules/cm²)
+                tempo_factor *= 1.15  # Indicates increased surface pollution
+            elif no2_column > 3e15:
+                tempo_factor *= 1.08
+            elif no2_column < 1e15:  # Clean atmosphere
+                tempo_factor *= 0.92
+            
+            # O3 Column Density Impact
+            o3_column = tempo_measurements.get('o3_column', 0)
+            if o3_column > 350:  # High ozone column (Dobson Units)
+                tempo_factor *= 1.12  # More ozone precursors available
+            elif o3_column > 300:
+                tempo_factor *= 1.05
+            elif o3_column < 250:  # Low ozone background
+                tempo_factor *= 0.95
+            
+            # HCHO Column Impact (Ozone precursor)
+            hcho_column = tempo_measurements.get('hcho_column', 0)
+            if hcho_column > 3e15:  # High formaldehyde (VOC indicator)
+                tempo_factor *= 1.10  # More ozone formation potential
+            elif hcho_column > 2e15:
+                tempo_factor *= 1.04
+            elif hcho_column < 1e15:
+                tempo_factor *= 0.96
+            
+            # Aerosol Optical Depth Impact
+            aod = tempo_measurements.get('aerosol_optical_depth', 0)
+            if aod > 0.5:  # High aerosol loading
+                tempo_factor *= 1.20  # Indicates high particulate matter
+            elif aod > 0.3:
+                tempo_factor *= 1.10
+            elif aod < 0.1:  # Very clean atmosphere
+                tempo_factor *= 0.85
+            
+            # Cloud Fraction Impact on Photochemistry
+            cloud_fraction = tempo_measurements.get('cloud_fraction', 0)
+            if cloud_fraction < 0.2:  # Clear skies
+                tempo_factor *= 1.05  # More photochemical activity
+            elif cloud_fraction > 0.8:  # Very cloudy
+                tempo_factor *= 0.92  # Reduced photochemistry
+        
+        # Apply traditional time-based factors
+        hour_factor = self._get_hour_factor(hour)
+        day_factor = self._get_day_factor(day_of_week)
+        weather_factor = self._get_weather_factor(weather_trend, hours_ahead)
+        
+        # Temporal degradation factor (uncertainty increases with time)
+        time_degradation = 1.0 - (hours_ahead * 0.02)  # 2% uncertainty per hour
+        time_degradation = max(0.7, time_degradation)  # Cap at 70% confidence
+        
+        # Combine all factors
+        final_factor = tempo_factor * hour_factor * day_factor * weather_factor * time_degradation
+        predicted_aqi = int(base_aqi * final_factor)
+        
+        # Ensure realistic bounds
+        predicted_aqi = max(0, min(500, predicted_aqi))
+        
+        return predicted_aqi
+    
+    def _get_hour_factor(self, hour: int) -> float:
+        """
+        Get pollution factor based on hour of day (traffic patterns, etc.)
+        """
+        hour_factors = {
+            # Early morning (low traffic)
+            0: 0.85, 1: 0.82, 2: 0.80, 3: 0.78, 4: 0.80, 5: 0.85,
+            # Morning rush hour
+            6: 0.95, 7: 1.15, 8: 1.25, 9: 1.10, 10: 1.05,
+            # Midday
+            11: 1.00, 12: 1.02, 13: 1.03, 14: 1.05, 15: 1.08,
+            # Evening rush hour
+            16: 1.15, 17: 1.25, 18: 1.20, 19: 1.10, 20: 1.05,
+            # Evening
+            21: 1.00, 22: 0.95, 23: 0.90
+        }
+        return hour_factors.get(hour, 1.0)
+    
+    def _get_day_factor(self, day_of_week: int) -> float:
+        """
+        Get pollution factor based on day of week (weekdays vs weekends)
+        """
+        # Monday=0, Sunday=6
+        if day_of_week < 5:  # Weekdays
+            return 1.05
+        else:  # Weekends
+            return 0.90
+    
+    def _get_weather_factor(self, weather_trend: Dict[str, Any], hours_ahead: int) -> float:
+        """
+        Get pollution factor based on weather conditions
+        """
+        if not weather_trend:
+            return 1.0
+        
+        factor = 1.0
+        
+        # Wind speed (higher wind = better dispersion)
+        wind_speed = weather_trend.get('wind_speed', 5)
+        if wind_speed > 8:
+            factor *= 0.85  # Good dispersion
+        elif wind_speed > 5:
+            factor *= 0.92
+        elif wind_speed < 2:
+            factor *= 1.20  # Poor dispersion
+        elif wind_speed < 4:
+            factor *= 1.10
+        
+        # Temperature (temperature inversions trap pollutants)
+        temp = weather_trend.get('temperature', 20)
+        if temp < 5:  # Very cold
+            factor *= 1.15
+        elif temp < 10:  # Cold
+            factor *= 1.08
+        elif temp > 35:  # Very hot (more photochemistry)
+            factor *= 1.10
+        elif temp > 28:  # Hot
+            factor *= 1.05
+        
+        # Humidity (affects particle formation)
+        humidity = weather_trend.get('humidity', 50)
+        if humidity > 85:  # Very humid
+            factor *= 1.08
+        elif humidity < 20:  # Very dry
+            factor *= 0.95
+        
+        return factor
     
     async def _generate_enhanced_forecast_points(
         self, 
