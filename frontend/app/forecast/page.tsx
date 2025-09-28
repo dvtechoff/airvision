@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import ForecastChart from '@/components/ForecastChart'
+import AISuggestions from '@/components/AISuggestions'
 import AlertBox from '@/components/AlertBox'
 import { apiClient, ForecastData } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RefreshCw, TrendingUp, BarChart3 } from 'lucide-react'
+import { useCity } from '@/contexts/CityContext'
 
 export default function ForecastPage() {
+  const { selectedCity, setSelectedCity } = useCity();
   const [forecastData, setForecastData] = useState<ForecastData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [city, setCity] = useState('New York')
   const [selectedPollutant, setSelectedPollutant] = useState('aqi')
 
   const fetchForecast = useCallback(async () => {
@@ -20,7 +22,7 @@ export default function ForecastPage() {
       setLoading(true)
       setError(null)
       
-      const forecast = await apiClient.getForecast(city)
+      const forecast = await apiClient.getForecast(selectedCity)
       setForecastData(forecast)
       console.log('Forecast data received:', forecast)
     } catch (err) {
@@ -28,12 +30,12 @@ export default function ForecastPage() {
       setError(err instanceof Error ? err.message : 'Failed to fetch forecast data')
       
       // Generate realistic mock data based on current time and city
-      const mockData = generateRealisticMockData(city)
+      const mockData = generateRealisticMockData(selectedCity)
       setForecastData(mockData)
     } finally {
       setLoading(false)
     }
-  }, [city])
+  }, [selectedCity])
 
   const generateRealisticMockData = (cityName: string) => {
     const cityBaseAQI: { [key: string]: number } = {
@@ -58,7 +60,7 @@ export default function ForecastPage() {
       }
       
       // Add some realistic variation
-      const variation = (Math.random() - 0.5) * 30
+      const variation = (Math.random() - 0.7) * 30
       const aqi = Math.max(20, Math.min(200, Math.round(baseAQI * hourFactor + variation)))
       
       let category = 'Good'
@@ -145,10 +147,10 @@ export default function ForecastPage() {
             {['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Diego', 'Dallas', 'Austin', 'Seattle'].map((cityName) => (
               <Button
                 key={cityName}
-                variant={city === cityName ? "default" : "outline"}
+                variant={selectedCity === cityName ? "default" : "outline"}
                 size="sm"
-                onClick={() => setCity(cityName)}
-                className={city === cityName ? "bg-blue-600 text-white" : "bg-white text-black border-gray-300 hover:bg-gray-100"}
+                onClick={() => setSelectedCity(cityName)}
+                className={selectedCity === cityName ? "bg-blue-600 text-white" : "bg-white text-black border-gray-300 hover:bg-gray-100"}
               >
                 {cityName}
               </Button>
@@ -157,8 +159,8 @@ export default function ForecastPage() {
         </CardContent>
       </Card>
 
-      {/* Pollutant Selector */}
-      <Card className="bg-white border-gray-200 shadow-sm">
+      {/* Pollutant Selector - HIDDEN */}
+      {/* <Card className="bg-white border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-black">
             <BarChart3 className="w-5 h-5 text-blue-500" />
@@ -180,7 +182,7 @@ export default function ForecastPage() {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Forecast Chart */}
       {forecastData && (
@@ -242,6 +244,12 @@ export default function ForecastPage() {
           description="Air quality is expected to deteriorate over the next 24 hours. Consider limiting outdoor activities during peak hours and using air purifiers indoors."
         />
       )}
+
+      {/* AI-Powered Suggestions */}
+      <AISuggestions 
+        city={selectedCity} 
+        className="w-full"
+      />
 
       {/* Model Information */}
       <Card className="bg-white border-gray-200 shadow-sm">

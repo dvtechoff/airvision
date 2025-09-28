@@ -9,6 +9,7 @@ import apiClient, { AQIData, WeatherData, RealtimeData } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useCity } from '@/contexts/CityContext'
 
 // Cache management
 interface CachedData {
@@ -23,7 +24,7 @@ const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 const CACHE_KEY = 'airvision_cache'
 
 export default function HomePage() {
-  const [city, setCity] = useState('New York')
+  const { selectedCity, setSelectedCity } = useCity();
   const [aqiData, setAqiData] = useState<AQIData | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null)
@@ -34,8 +35,8 @@ export default function HomePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
-    loadDataWithCache(city)
-  }, [city])
+    loadDataWithCache(selectedCity)
+  }, [selectedCity])
 
   const loadCachedData = (): CachedData | null => {
     if (typeof window === 'undefined') return null
@@ -45,7 +46,7 @@ export default function HomePage() {
       if (cached) {
         const data: CachedData = JSON.parse(cached)
         const now = Date.now()
-        if (now - data.timestamp < CACHE_DURATION && data.city === city) {
+        if (now - data.timestamp < CACHE_DURATION && data.city === selectedCity) {
           return data
         }
       }
@@ -87,7 +88,7 @@ export default function HomePage() {
 
   const refreshData = async () => {
     setRefreshing(true)
-    await fetchData(city, true)
+    await fetchData(selectedCity, true)
     setRefreshing(false)
   }
 
@@ -207,7 +208,7 @@ export default function HomePage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchCity.trim()) {
-      setCity(searchCity.trim())
+      setSelectedCity(searchCity.trim())
       setSearchCity('')
     }
   }
@@ -290,6 +291,32 @@ export default function HomePage() {
                 Try: New York, Los Angeles, Chicago, Houston, or any major city
               </p>
             </motion.form>
+
+            {/* Popular Cities Selector */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="max-w-4xl mx-auto mt-8"
+            >
+              <p className="text-center text-sm text-gray-600 mb-4">Or select a popular city:</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Diego', 'Dallas', 'Austin', 'Seattle'].map((cityName) => (
+                  <Button
+                    key={cityName}
+                    variant={selectedCity === cityName ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCity(cityName)}
+                    className={selectedCity === cityName ? 
+                      "bg-blue-600 text-white hover:bg-blue-700" : 
+                      "bg-white text-black border-gray-300 hover:bg-gray-100"
+                    }
+                  >
+                    {cityName}
+                  </Button>
+                ))}
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -304,7 +331,7 @@ export default function HomePage() {
               className="text-center mb-12"
             >
               <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
-                Live Environmental Dashboard - {city}
+                Live Environmental Dashboard - {selectedCity}
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
                 Real-time air quality and weather data from OpenWeatherMap API
@@ -423,7 +450,7 @@ export default function HomePage() {
               Personalized Health Recommendations
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Get tailored advice based on current air quality conditions in {city} to protect your health
+              Get tailored advice based on current air quality conditions in {selectedCity} to protect your health
             </p>
           </motion.div>
 
@@ -455,7 +482,7 @@ export default function HomePage() {
               className="text-center mt-12"
             >
               <div className="inline-flex items-center bg-white px-6 py-3 rounded-full shadow-lg border border-gray-200">
-                <span className="text-gray-600 mr-2">Current AQI in {city}:</span>
+                <span className="text-gray-600 mr-2">Current AQI in {selectedCity}:</span>
                 <span className="font-bold text-2xl text-black">{aqiData.aqi}</span>
                 <span className="ml-2 text-sm font-medium text-gray-500">({aqiData.category})</span>
               </div>

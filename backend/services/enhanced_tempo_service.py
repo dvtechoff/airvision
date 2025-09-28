@@ -330,24 +330,24 @@ class EnhancedTEMPOService:
         is_rush_hour = hour in [7, 8, 9, 17, 18, 19]
         is_daytime = 6 <= hour <= 18
         
-        # City-specific pollution factors
+        # City-specific pollution factors - Made more realistic
         pollution_factors = {
-            'new york': {'base_factor': 1.6, 'industrial': True, 'coastal': True},
-            'los angeles': {'base_factor': 2.1, 'industrial': True, 'coastal': True},
-            'chicago': {'base_factor': 1.5, 'industrial': True, 'coastal': False},
-            'houston': {'base_factor': 1.9, 'industrial': True, 'coastal': True},
-            'phoenix': {'base_factor': 1.4, 'industrial': False, 'coastal': False},
-            'philadelphia': {'base_factor': 1.5, 'industrial': True, 'coastal': False},
-            'san antonio': {'base_factor': 1.3, 'industrial': False, 'coastal': False},
-            'san diego': {'base_factor': 1.2, 'industrial': False, 'coastal': True},
-            'dallas': {'base_factor': 1.4, 'industrial': True, 'coastal': False},
-            'san francisco': {'base_factor': 1.1, 'industrial': False, 'coastal': True},
-            'denver': {'base_factor': 1.3, 'industrial': False, 'coastal': False},
-            'seattle': {'base_factor': 1.0, 'industrial': False, 'coastal': True},
-            'atlanta': {'base_factor': 1.4, 'industrial': True, 'coastal': False},
-            'miami': {'base_factor': 1.2, 'industrial': False, 'coastal': True},
-            'boston': {'base_factor': 1.3, 'industrial': False, 'coastal': True},
-            'detroit': {'base_factor': 1.6, 'industrial': True, 'coastal': False},
+            'new york': {'base_factor': 1.3, 'industrial': True, 'coastal': True},
+            'los angeles': {'base_factor': 1.4, 'industrial': True, 'coastal': True},  # Reduced from 2.1
+            'chicago': {'base_factor': 1.2, 'industrial': True, 'coastal': False},
+            'houston': {'base_factor': 1.3, 'industrial': True, 'coastal': True},  # Reduced from 1.9
+            'phoenix': {'base_factor': 1.2, 'industrial': False, 'coastal': False},
+            'philadelphia': {'base_factor': 1.2, 'industrial': True, 'coastal': False},
+            'san antonio': {'base_factor': 1.1, 'industrial': False, 'coastal': False},
+            'san diego': {'base_factor': 1.0, 'industrial': False, 'coastal': True},
+            'dallas': {'base_factor': 1.2, 'industrial': True, 'coastal': False},
+            'san francisco': {'base_factor': 0.9, 'industrial': False, 'coastal': True},
+            'denver': {'base_factor': 1.1, 'industrial': False, 'coastal': False},
+            'seattle': {'base_factor': 0.8, 'industrial': False, 'coastal': True},
+            'atlanta': {'base_factor': 1.2, 'industrial': True, 'coastal': False},
+            'miami': {'base_factor': 1.0, 'industrial': False, 'coastal': True},
+            'boston': {'base_factor': 1.1, 'industrial': False, 'coastal': True},
+            'detroit': {'base_factor': 1.3, 'industrial': True, 'coastal': False},
             'washington': {'base_factor': 1.3, 'industrial': False, 'coastal': False},
             'portland': {'base_factor': 1.1, 'industrial': False, 'coastal': True},
             'toronto': {'base_factor': 1.3, 'industrial': True, 'coastal': False},

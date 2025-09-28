@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import AISuggestions from '@/components/AISuggestions'
 import { apiClient, RealtimeData } from '@/lib/api'
 import { RefreshCw, Activity, AlertTriangle, Clock, Cloud, Sun, MapPin } from 'lucide-react'
+import { useCity } from '@/contexts/CityContext'
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -27,17 +29,23 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function RealtimePage() {
-  const [city, setCity] = useState('New York')
+  const { selectedCity, setSelectedCity } = useCity();
+  const [inputCity, setInputCity] = useState(selectedCity)
   const [realtimeData, setRealtimeData] = useState<RealtimeData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   // Debounce city input to avoid excessive API calls while user is typing
-  const debouncedCity = useDebounce(city.trim(), 1000) // 1 second delay
+  const debouncedInputCity = useDebounce(inputCity.trim(), 1000) // 1 second delay
+
+  // Update input city when global selected city changes
+  useEffect(() => {
+    setInputCity(selectedCity);
+  }, [selectedCity]);
 
   const fetchRealtimeData = useCallback(async (targetCity?: string) => {
-    const cityToFetch = targetCity || debouncedCity
+    const cityToFetch = targetCity || selectedCity
     if (!cityToFetch) return
 
     try {
@@ -103,14 +111,14 @@ export default function RealtimePage() {
     } finally {
       setLoading(false)
     }
-  }, [debouncedCity])
+  }, [selectedCity])
 
-  // Automatically fetch data when the debounced city changes
+  // Automatically update global city when user types a new city
   useEffect(() => {
-    if (debouncedCity) {
-      fetchRealtimeData()
+    if (debouncedInputCity && debouncedInputCity !== selectedCity) {
+      setSelectedCity(debouncedInputCity);
     }
-  }, [debouncedCity, fetchRealtimeData])
+  }, [debouncedInputCity, selectedCity, setSelectedCity])
 
   // Initial data fetch on component mount
   useEffect(() => {
@@ -157,8 +165,8 @@ export default function RealtimePage() {
             </label>
             <Input
               id="city"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
+              value={inputCity}
+              onChange={(e) => setInputCity(e.target.value)}
               placeholder="Enter any city name (e.g., Los Angeles, Tokyo, London)"
               className="w-full bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
@@ -173,17 +181,17 @@ export default function RealtimePage() {
           </Button>
         </div>
         
-        {debouncedCity && debouncedCity !== city && (
+        {debouncedInputCity && debouncedInputCity !== selectedCity && (
           <div className="text-sm text-blue-600 mb-2">
             <Clock className="w-3 h-3 inline mr-1" />
-            Will fetch fresh data for "{debouncedCity}" in a moment...
+            Will fetch fresh data for "{debouncedInputCity}" in a moment...
           </div>
         )}
         
         {loading && (
           <div className="text-sm text-gray-600 mb-2">
             <RefreshCw className="w-3 h-3 inline mr-1 animate-spin" />
-            Fetching fresh forecast-based real-time data for {debouncedCity}...
+            Fetching fresh forecast-based real-time data for {selectedCity}...
           </div>
         )}
       </div>
@@ -384,6 +392,12 @@ export default function RealtimePage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* AI-Powered Suggestions */}
+              <AISuggestions 
+                city={selectedCity} 
+                className="w-full"
+              />
             </>
           ) : (
             <Card className="bg-white border border-gray-200 shadow-sm">
