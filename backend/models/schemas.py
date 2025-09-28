@@ -15,6 +15,8 @@ class AQIData(BaseModel):
     pollutants: Pollutants = Field(..., description="Pollutant concentrations")
     source: str = Field(..., description="Data source")
     timestamp: datetime = Field(..., description="Data timestamp")
+    real_data: Optional[bool] = Field(None, description="Whether data comes from real sources")
+    metadata: Optional[dict] = Field(None, description="Additional metadata")
 
 class ForecastPoint(BaseModel):
     time: datetime = Field(..., description="Forecast timestamp")

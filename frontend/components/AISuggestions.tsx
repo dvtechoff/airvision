@@ -5,16 +5,19 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AlertBox from './AlertBox';
-import { Brain, Heart, Activity, Home, Car, Clock, User, Sparkles } from 'lucide-react';
+import { Brain, Heart, Activity, Home, Car, Clock, User, Sparkles, CheckCircle, XCircle } from 'lucide-react';
 
 interface Suggestions {
-  immediate_health: string[];
-  outdoor_activity: string[];
-  indoor_tips: string[];
-  vulnerable_groups: string[];
-  commute_travel: string[];
-  long_term: string[];
-  general_advice: string[];
+  good_recommendations?: string[];
+  bad_recommendations?: string[];
+  general_advice?: string[];
+  // Legacy support for old format
+  immediate_health?: string[];
+  outdoor_activity?: string[];
+  indoor_tips?: string[];
+  vulnerable_groups?: string[];
+  commute_travel?: string[];
+  long_term?: string[];
 }
 
 interface ForecastSummary {
@@ -103,26 +106,28 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
 
   const getSuggestionIcon = (category: string) => {
     switch (category) {
-      case 'immediate_health': return <Heart className="w-4 h-4" />;
-      case 'outdoor_activity': return <Activity className="w-4 h-4" />;
-      case 'indoor_tips': return <Home className="w-4 h-4" />;
-      case 'vulnerable_groups': return <User className="w-4 h-4" />;
-      case 'commute_travel': return <Car className="w-4 h-4" />;
-      case 'long_term': return <Clock className="w-4 h-4" />;
+      case 'good_recommendations': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'bad_recommendations': return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'general_advice': return <Sparkles className="w-4 h-4" />;
       default: return <Sparkles className="w-4 h-4" />;
     }
   };
 
   const getCategoryTitle = (category: string) => {
     switch (category) {
-      case 'immediate_health': return 'Immediate Health Advice';
-      case 'outdoor_activity': return 'Outdoor Activity Guidance';
-      case 'indoor_tips': return 'Indoor Air Quality Tips';
-      case 'vulnerable_groups': return 'Vulnerable Groups Advice';
-      case 'commute_travel': return 'Commute & Travel Tips';
-      case 'long_term': return 'Long-term Strategies';
+      case 'good_recommendations': return 'Recommended Actions';
+      case 'bad_recommendations': return 'Things to Avoid';
       case 'general_advice': return 'General Recommendations';
       default: return 'Suggestions';
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'good_recommendations': return 'border-green-200 bg-green-50';
+      case 'bad_recommendations': return 'border-red-200 bg-red-50'; 
+      case 'general_advice': return 'border-gray-200 bg-gray-50';
+      default: return 'border-gray-200 bg-gray-50';
     }
   };
 
@@ -169,7 +174,12 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
     return null;
   }
 
-  const hasAnySuggestions = Object.values(suggestions).some(arr => arr.length > 0);
+  const hasAnySuggestions = 
+    (suggestions.good_recommendations && suggestions.good_recommendations.length > 0) ||
+    (suggestions.bad_recommendations && suggestions.bad_recommendations.length > 0) ||
+    (suggestions.general_advice && suggestions.general_advice.length > 0) ||
+    // Legacy support
+    Object.values(suggestions).some(arr => Array.isArray(arr) && arr.length > 0);
 
   if (!hasAnySuggestions) {
     return (
@@ -251,35 +261,82 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
         </Card>
       )}
 
-      {/* Suggestion categories */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {Object.entries(suggestions).map(([category, items]) => {
-          if (!items || items.length === 0) return null;
-          
-          return (
-            <Card key={category} className="h-fit bg-white border-gray-200 shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex items-center">
-                  {getSuggestionIcon(category)}
-                  <CardTitle className="text-sm font-medium ml-2 text-black">
-                    {getCategoryTitle(category)}
-                  </CardTitle>
+      {/* Suggestion categories - Good and Bad recommendations */}
+      <div className="grid gap-4">
+        {/* Good Recommendations */}
+        {suggestions.good_recommendations && suggestions.good_recommendations.length > 0 && (
+          <Card className={`bg-white border-green-200 shadow-sm`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <CardTitle className="text-sm font-medium ml-2 text-black">
+                  Recommended Actions ✅
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {suggestions.good_recommendations.map((suggestion: string, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="flex items-start p-3 bg-green-50 rounded-md text-sm border-l-4 border-green-400"
+                >
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></span>
+                  <span className="text-black font-medium">{suggestion}</span>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {items.map((suggestion: string, idx: number) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-start p-2 bg-gray-50 rounded-md text-sm"
-                  >
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
-                    <span className="text-black">{suggestion}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          );
-        })}
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Bad Recommendations */}
+        {suggestions.bad_recommendations && suggestions.bad_recommendations.length > 0 && (
+          <Card className={`bg-white border-red-200 shadow-sm`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center">
+                <XCircle className="w-4 h-4 text-red-600" />
+                <CardTitle className="text-sm font-medium ml-2 text-black">
+                  Things to Avoid ⚠️
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {suggestions.bad_recommendations.map((suggestion: string, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="flex items-start p-3 bg-red-50 rounded-md text-sm border-l-4 border-red-400"
+                >
+                  <span className="inline-block w-2 h-2 bg-red-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></span>
+                  <span className="text-black font-medium">{suggestion}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* General Advice (fallback) */}
+        {suggestions.general_advice && suggestions.general_advice.length > 0 && (
+          <Card className={`bg-white border-gray-200 shadow-sm`}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <CardTitle className="text-sm font-medium ml-2 text-black">
+                  General Recommendations
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {suggestions.general_advice.slice(0, 6).map((suggestion: string, idx: number) => (
+                <div 
+                  key={idx} 
+                  className="flex items-start p-2 bg-gray-50 rounded-md text-sm"
+                >
+                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
+                  <span className="text-black">{suggestion}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Source attribution */}

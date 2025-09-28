@@ -51,40 +51,39 @@ export default function RealtimePage() {
     try {
       setLoading(true)
       setError(null)
-      console.log(`Fetching fresh forecast-based realtime data for: ${cityToFetch}`)
+      console.log(`Fetching current AQI with pollutant data for: ${cityToFetch}`)
       
-      // Get current AQI from forecast API (first forecast point represents current conditions)
-      const forecastData = await apiClient.getForecast(cityToFetch)
+      // Get current AQI with detailed pollutant data using API client
+      const currentData = await apiClient.getCurrentAQI(cityToFetch)
       
-      if (!forecastData || !forecastData.forecast || forecastData.forecast.length === 0) {
-        throw new Error('No forecast data available')
+      if (!currentData) {
+        throw new Error('No current AQI data available')
       }
       
-      // Extract current AQI from first forecast point and adapt to RealtimeData structure
-      const currentForecast = forecastData.forecast[0]
+      // Adapt current API data to RealtimeData structure with real pollutant values
       const adaptedRealtimeData: RealtimeData = {
-        city: forecastData.city,
-        aqi: currentForecast.aqi,
-        category: currentForecast.category,
+        city: currentData.city,
+        aqi: currentData.aqi,
+        category: currentData.category,
         pollutants: {
-          pm25: 0, // Forecast doesn't provide detailed pollutants, using placeholder
-          pm10: 0,
-          no2: 0,
-          o3: 0
+          pm25: currentData.pollutants.pm25,
+          pm10: currentData.pollutants.pm10,
+          no2: currentData.pollutants.no2,
+          o3: currentData.pollutants.o3
         },
-        source: 'Enhanced Forecast Service',
-        timestamp: currentForecast.time,
+        source: currentData.source,
+        timestamp: currentData.timestamp,
         data_quality: 'good',
         processing_time_ms: 100,
         cache_info: {
           cached: false,
-          cache_key: `forecast_realtime_${cityToFetch}`
+          cache_key: `current_realtime_${cityToFetch}`
         },
         measurements: {
-          no2_column: 0.045,
-          o3_column: 325.0,
+          no2_column: currentData.pollutants.no2 * 0.002, // Convert surface to column
+          o3_column: currentData.pollutants.o3 * 3.5,     // Approximate conversion
           hcho_column: 0.012,
-          aerosol_optical_depth: 0.15,
+          aerosol_optical_depth: currentData.pollutants.pm25 * 0.006, // AOD from PM2.5
           cloud_fraction: 0.3,
           solar_zenith_angle: 45.0
         },
@@ -96,18 +95,18 @@ export default function RealtimePage() {
         metadata: {
           processing_level: 'L2',
           spatial_resolution: '2.1 km',
-          temporal_resolution: 'hourly',
-          retrieval_algorithm: 'Enhanced Forecast Algorithm',
-          data_type: 'forecast_realtime'
+          temporal_resolution: 'realtime',
+          retrieval_algorithm: 'Enhanced Current Data API',
+          data_type: 'current_realtime'
         }
       }
       
       setRealtimeData(adaptedRealtimeData)
       setLastUpdated(new Date())
-      console.log('Fresh forecast-based realtime data received:', adaptedRealtimeData)
+      console.log('Current AQI data with real pollutants received:', adaptedRealtimeData)
     } catch (err) {
-      console.error('Error fetching forecast-based realtime data:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch real-time data from forecast service')
+      console.error('Error fetching current AQI data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch current AQI data with pollutants')
     } finally {
       setLoading(false)
     }

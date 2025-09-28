@@ -124,18 +124,19 @@ Forecast Details (Next 6 Hours):
             context += f"- {time_str}: AQI {forecast['aqi']} ({forecast['category']})\n"
         
         context += """
-Please provide comprehensive, actionable suggestions in the following categories. Make them specific, practical, and tailored to the current air quality conditions:
+Please provide EXACTLY 6 actionable suggestions - 3 GOOD (recommended actions) and 3 BAD (things to avoid). Keep them concise and practical:
 
-1. IMMEDIATE HEALTH RECOMMENDATIONS (next 2-4 hours)
-2. OUTDOOR ACTIVITY GUIDANCE (exercise, sports, commuting)  
-3. INDOOR AIR QUALITY TIPS (ventilation, air purifiers, windows)
-4. VULNERABLE GROUPS ADVICE (children, elderly, asthma/respiratory conditions)
-5. COMMUTE & TRAVEL SUGGESTIONS (timing, routes, transportation modes)
-6. LONG-TERM HEALTH STRATEGIES (if air quality is persistently poor)
+**GOOD RECOMMENDATIONS (3 things TO DO):**
+- [Specific recommendation 1]
+- [Specific recommendation 2] 
+- [Specific recommendation 3]
 
-Format your response as practical, easy-to-follow bullet points. Be specific about timing (e.g., "avoid outdoor exercise between 2-5 PM"). Include scientific reasoning where helpful. Consider the trend - if air quality is improving/worsening, mention optimal timing for activities.
+**BAD RECOMMENDATIONS (3 things to AVOID):**
+- [Specific thing to avoid 1]
+- [Specific thing to avoid 2]
+- [Specific thing to avoid 3]
 
-Make suggestions actionable and city-specific when relevant. Remember this data comes from NASA satellites and is highly accurate.
+Focus on the most important, actionable advice. Be specific about timing when relevant. Each recommendation should be one clear sentence.
 """
         
         return context
@@ -202,59 +203,56 @@ Make suggestions actionable and city-specific when relevant. Remember this data 
                     raise Exception(f"Gemini API error {response.status}: {error_text}")
     
     def _parse_ai_response(self, generated_text: str) -> Dict[str, Any]:
-        """Parse the AI response into structured suggestions"""
+        """Parse the AI response into structured suggestions (3 good, 3 bad)"""
         
         suggestions = {
-            "immediate_health": [],
-            "outdoor_activity": [],
-            "indoor_tips": [],
-            "vulnerable_groups": [],
-            "commute_travel": [],
-            "long_term": [],
+            "good_recommendations": [],
+            "bad_recommendations": [],
             "general_advice": []
         }
         
         # Split the response and categorize suggestions
         lines = generated_text.split('\n')
-        current_category = "general_advice"
-        
-        category_mapping = {
-            "immediate": "immediate_health",
-            "outdoor": "outdoor_activity", 
-            "indoor": "indoor_tips",
-            "vulnerable": "vulnerable_groups",
-            "commute": "commute_travel",
-            "travel": "commute_travel",
-            "long-term": "long_term",
-            "long term": "long_term"
-        }
+        current_category = None
         
         for line in lines:
             line = line.strip()
             if not line:
                 continue
                 
-            # Check if this line indicates a new category
+            # Check if this line indicates good or bad recommendations
             line_lower = line.lower()
-            for keyword, category in category_mapping.items():
-                if keyword in line_lower and ("recommendation" in line_lower or "guidance" in line_lower or "advice" in line_lower or "tip" in line_lower):
-                    current_category = category
-                    break
+            if "good" in line_lower and ("recommendation" in line_lower or "do" in line_lower):
+                current_category = "good_recommendations"
+                continue
+            elif "bad" in line_lower and ("recommendation" in line_lower or "avoid" in line_lower):
+                current_category = "bad_recommendations"  
+                continue
             
             # Add bullet points to appropriate category
             if line.startswith('- ') or line.startswith('• ') or line.startswith('* '):
                 suggestion_text = line[2:].strip()
-                if suggestion_text:
+                if suggestion_text and current_category:
                     suggestions[current_category].append(suggestion_text)
-            elif line.startswith(('1.', '2.', '3.', '4.', '5.', '6.')):
+            elif line.startswith(('1.', '2.', '3.')):
                 # Handle numbered lists
                 suggestion_text = line.split('.', 1)[1].strip() if '.' in line else line
-                if suggestion_text:
+                if suggestion_text and current_category:
                     suggestions[current_category].append(suggestion_text)
         
-        # Add general advice if categories are empty
-        if all(len(cat) == 0 for cat in suggestions.values()):
-            suggestions["general_advice"] = [generated_text]
+        # Limit to exactly 3 of each type
+        suggestions["good_recommendations"] = suggestions["good_recommendations"][:3]
+        suggestions["bad_recommendations"] = suggestions["bad_recommendations"][:3]
+        
+        # If we don't have the right format, add to general advice
+        if len(suggestions["good_recommendations"]) == 0 and len(suggestions["bad_recommendations"]) == 0:
+            # Fallback: treat all suggestions as general advice
+            all_suggestions = []
+            for line in lines:
+                line = line.strip()
+                if line.startswith(('- ', '• ', '* ')):
+                    all_suggestions.append(line[2:].strip())
+            suggestions["general_advice"] = all_suggestions[:6]  # Limit to 6 total
         
         return suggestions
     
@@ -298,49 +296,60 @@ Make suggestions actionable and city-specific when relevant. Remember this data 
         }
     
     def _get_fallback_suggestions(self, city: str, forecast_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Provide fallback suggestions if Gemini AI is unavailable"""
+        """Provide fallback suggestions if Gemini AI is unavailable (3 good, 3 bad)"""
         
         current_aqi = forecast_data[0]['aqi'] if forecast_data else 100
         
-        # Basic rule-based suggestions
+        # Basic rule-based suggestions (3 good, 3 bad)
         suggestions = {
-            "immediate_health": [],
-            "outdoor_activity": [],
-            "indoor_tips": [],
-            "vulnerable_groups": [],
-            "commute_travel": [],
-            "long_term": [],
+            "good_recommendations": [],
+            "bad_recommendations": [],
             "general_advice": []
         }
         
         if current_aqi <= 50:  # Good
-            suggestions["general_advice"] = [
-                "Air quality is excellent! Perfect time for all outdoor activities.",
-                "Great conditions for exercise, sports, and outdoor recreation.",
-                "Enjoy fresh air - consider opening windows for natural ventilation."
+            suggestions["good_recommendations"] = [
+                "Perfect conditions for all outdoor activities and exercise",
+                "Open windows for natural ventilation and fresh air circulation",
+                "Great time for children to play outdoors and be active"
+            ]
+            suggestions["bad_recommendations"] = [
+                "Don't stay indoors unnecessarily - the air quality is excellent",
+                "Avoid relying on air purifiers when natural air is this clean",
+                "Don't postpone outdoor exercise or recreational activities"
             ]
         elif current_aqi <= 100:  # Moderate
-            suggestions["outdoor_activity"] = [
-                "Good time for most outdoor activities with normal precautions.",
-                "Sensitive individuals should consider reducing prolonged outdoor exertion."
+            suggestions["good_recommendations"] = [
+                "Normal outdoor activities are fine for most people",
+                "Consider using air purifiers if you have respiratory sensitivities",
+                "Monitor air quality if planning intense outdoor exercise"
             ]
-            suggestions["indoor_tips"] = [
-                "Consider using air purifiers if you have respiratory sensitivities."
+            suggestions["bad_recommendations"] = [
+                "Avoid prolonged outdoor exertion if you're in a sensitive group",
+                "Don't leave windows open all day in polluted areas",
+                "Avoid scheduling marathon runs or intense sports during peak hours"
             ]
         elif current_aqi <= 150:  # Unhealthy for Sensitive Groups
-            suggestions["vulnerable_groups"] = [
-                "People with asthma, heart disease, or lung conditions should limit outdoor activities.",
-                "Children and elderly should reduce time spent outdoors."
+            suggestions["good_recommendations"] = [
+                "Keep windows closed and use air purifiers indoors",
+                "Plan outdoor activities for early morning when pollution is lower",
+                "Check air quality before going outside, especially with children"
             ]
-            suggestions["outdoor_activity"] = [
-                "Consider postponing intense outdoor exercise.",
-                "Limit outdoor activities during peak pollution hours."
+            suggestions["bad_recommendations"] = [
+                "Avoid intense outdoor exercise, especially for sensitive groups",
+                "Don't take children and elderly outside during peak pollution hours", 
+                "Avoid opening windows during the day when AQI is highest"
             ]
         else:  # Unhealthy or worse
-            suggestions["immediate_health"] = [
-                "Limit all outdoor activities, especially for sensitive groups.",
-                "Keep windows closed and use air purifiers indoors.",
-                "Consider wearing N95 masks when going outside."
+            suggestions["good_recommendations"] = [
+                "Stay indoors and keep windows closed with air purifiers running",
+                "Consider wearing N95 masks when you must go outside",
+                "Postpone all non-essential outdoor activities until AQI improves"
+            ]
+            suggestions["bad_recommendations"] = [
+                "Avoid all outdoor exercise and sports activities",
+                "Don't take vulnerable family members (children, elderly) outside",
+                "Avoid using fans that circulate outdoor air into your home"
             ]
         
         return {
