@@ -18,14 +18,8 @@ try:
     from models.database import OpenAQLocation, LocationQuery, AirQualityData
     from database.config import db_manager
     HAS_DATABASE = True
-    SessionType = Session
-    OpenAQLocationType = OpenAQLocation
 except ImportError:
     HAS_DATABASE = False
-    # Define fallback types for type hints
-    from typing import Any
-    SessionType = Any
-    OpenAQLocationType = Any
 
 logger = logging.getLogger(__name__)
 
@@ -236,10 +230,52 @@ class OpenAQLocationService:
         """
         Find the closest OpenAQ location for a given query or coordinates
         """
-        # Use fallback method when database is not available  
-        return await self._find_closest_location_fallback(query, lat, lon)
+        if not HAS_DATABASE:
+            return await self._find_closest_location_fallback(query, lat, lon)
+        
+        try:
+            with db_manager.get_session() as session:
+                # First, check if we have a cached query result
+                cached_result = self._get_cached_query_result(session, query)
+                if cached_result:
+                    return cached_result
+                
+                # If coordinates not provided, try to geocode the query
+                if lat is None or lon is None:
+                    coords = await self._geocode_query(query)
+                    if coords:
+                        lat, lon = coords
+                    else:
+                        # Fallback: search by name in database
+                        return await self._search_by_name(session, query)
+                
+                # Find closest location using spatial query
+                closest_location = self._find_closest_by_coordinates(session, lat, lon)
+                
+                if closest_location:
+                    # Cache the result
+                    self._cache_query_result(session, query, lat, lon, closest_location)
+                    
+                    return {
+                        "openaq_id": closest_location.openaq_id,
+                        "name": closest_location.display_name or closest_location.name,
+                        "city": closest_location.city,
+                        "country": closest_location.country,
+                        "latitude": closest_location.latitude,
+                        "longitude": closest_location.longitude,
+                        "parameters": closest_location.parameters,
+                        "distance_km": self._calculate_distance(lat, lon, closest_location.latitude, closest_location.longitude),
+                        "measurements_count": closest_location.measurements_count,
+                        "last_updated": closest_location.last_updated
+                    }
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error finding closest location for {query}: {e}")
+            return None
 
-    def _find_closest_by_coordinates(self, session, lat: float, lon: float, max_distance_km: float = 100):
+    def _find_closest_by_coordinates(self, session: Session, lat: float, lon: float, max_distance_km: float = 100) -> Optional['OpenAQLocation']:
         """Find closest location using database spatial operations"""
         # Using simple distance calculation (can be optimized with PostGIS)
         locations = session.query(OpenAQLocation).filter(
@@ -408,49 +444,6 @@ class OpenAQLocationService:
                             
         except Exception as e:
             self.logger.error(f"Error caching measurements: {e}")
-
-    async def get_air_quality_data(self, openaq_id: int, parameters: List[str] = None) -> Optional[Dict[str, Any]]:
-        """
-        Get recent air quality data for a specific OpenAQ location
-        """
-        await self.initialize_client()
-        
-        try:
-            # Get recent measurements from OpenAQ API
-            params = {
-                "locations_id": openaq_id,
-                "limit": 100,
-                "sort": "desc",
-                "order_by": "datetime"
-            }
-            
-            if parameters:
-                params["parameter"] = ",".join(parameters)
-            
-            response = await self.client.get("measurements", params=params)
-            
-            if response.status_code == 401:
-                self.logger.warning("OpenAQ API authentication required for measurements")
-                return {"error": "API key required", "measurements": []}
-            elif response.status_code != 200:
-                self.logger.error(f"Measurements API error {response.status_code}")
-                return {"error": f"API error {response.status_code}", "measurements": []}
-            
-            data = response.json()
-            measurements = data.get("results", [])
-            
-            # Process measurements into a structured format
-            processed_data = self._process_measurements(measurements)
-            
-            # Store in database cache if available
-            if HAS_DATABASE:
-                await self._cache_measurements(openaq_id, measurements)
-            
-            return processed_data
-            
-        except Exception as e:
-            self.logger.error(f"Error fetching air quality data for location {openaq_id}: {e}")
-            return None
 
     async def _find_closest_location_fallback(self, query: str, lat: Optional[float] = None, lon: Optional[float] = None) -> Optional[Dict[str, Any]]:
         """
