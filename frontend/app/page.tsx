@@ -105,8 +105,9 @@ export default function HomePage() {
       console.log('⏰ Fetch start time:', new Date().toISOString())
       
       // Use Promise.all for parallel requests instead of sequential
-      const [aqiResponse, weatherResponse] = await Promise.all([
-        fetch(`${baseURL}/api/current?city=${encodeURIComponent(cityName)}`, {
+      // Get current AQI from forecast API (first forecast point represents current conditions)
+      const [forecastResponse, weatherResponse] = await Promise.all([
+        fetch(`${baseURL}/api/forecast?city=${encodeURIComponent(cityName)}&hours=24`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -123,10 +124,10 @@ export default function HomePage() {
       ])
       
       const aqiTime = performance.now()
-      console.log('📊 AQI response time:', aqiTime - startTime, 'ms, status:', aqiResponse.status)
+      console.log('📊 Forecast response time:', aqiTime - startTime, 'ms, status:', forecastResponse.status)
       
-      if (!aqiResponse.ok) {
-        throw new Error(`AQI API error: ${aqiResponse.status} ${aqiResponse.statusText}`)
+      if (!forecastResponse.ok) {
+        throw new Error(`Forecast API error: ${forecastResponse.status} ${forecastResponse.statusText}`)
       }
       
       if (!weatherResponse.ok) {
@@ -134,14 +135,32 @@ export default function HomePage() {
       }
       
       // Parse JSON in parallel
-      const [fetchedAqiData, fetchedWeatherData] = await Promise.all([
-        aqiResponse.json(),
+      const [forecastData, fetchedWeatherData] = await Promise.all([
+        forecastResponse.json(),
         weatherResponse.json()
       ])
       
       const parseTime = performance.now()
       console.log('📝 JSON parsing time:', parseTime - aqiTime, 'ms')
-      console.log('✅ AQI data received:', fetchedAqiData)
+      
+      // Extract current AQI data from forecast (first point represents current conditions)
+      const fetchedAqiData = forecastData.forecast && forecastData.forecast.length > 0 
+        ? {
+            city: forecastData.city,
+            aqi: forecastData.forecast[0].aqi,
+            category: forecastData.forecast[0].category,
+            pollutants: {
+              pm25: 0, // Default values as forecast doesn't include detailed pollutants
+              pm10: 0,
+              no2: 0,
+              o3: 0
+            },
+            source: 'Forecast API (Current)',
+            timestamp: forecastData.forecast[0].time
+          }
+        : null;
+      
+      console.log('✅ AQI data extracted from forecast:', fetchedAqiData)
       console.log('🌤️ Weather data received:', fetchedWeatherData)
       
       setAqiData(fetchedAqiData)
